@@ -1,0 +1,314 @@
+import { useEffect, useState } from "react";
+import API from "../api/api";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+export default function AdminDashboard() {
+
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [users, setUsers] = useState([]);
+    const [projets, setProjets] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [success, setSuccess] = useState("");
+    const [activeTab, setActiveTab] = useState("dashboard");
+
+    useEffect(() => {
+        fetchAll();
+    }, []);
+
+    const fetchAll = async () => {
+        try {
+            const [usersRes, statsRes, projetsRes] = await Promise.all([
+                API.get("/users"),
+                API.get("/dashboard/stats"),
+                API.get("/projects")
+            ]);
+            setUsers(usersRes.data);
+            setStats(statsRes.data);
+            setProjets(projetsRes.data);
+        } catch (err) {
+            console.log(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateStatut = async (userId, statut) => {
+        await API.patch(`/users/${userId}/validate`, { statut });
+        setSuccess("Statut mis à jour !");
+        setTimeout(() => setSuccess(""), 3000);
+        fetchAll();
+    };
+
+    const updateRole = async (userId, role) => {
+        await API.put(`/users/${userId}/role`, { role });
+        setSuccess("Rôle mis à jour !");
+        setTimeout(() => setSuccess(""), 3000);
+        fetchAll();
+    };
+
+    const deleteUser = async (userId) => {
+        if (!window.confirm("Supprimer cet utilisateur définitivement ?")) return;
+        await API.delete(`/users/${userId}`);
+        setSuccess("Utilisateur supprimé.");
+        setTimeout(() => setSuccess(""), 3000);
+        fetchAll();
+    };
+
+    const handleLogout = async () => {
+        await API.post("/logout");
+        logout();
+        navigate("/");
+    };
+
+    const getStatutColor = (statut) => ({
+        actif:      "#10b981",
+        en_attente: "#f59e0b",
+        suspendu:   "#ef4444",
+    }[statut] ?? "#6b7280");
+
+    const getRoleColor = (role) => ({
+        admin:  "#7c3aed",
+        chef:   "#2563eb",
+        membre: "#059669",
+    }[role] ?? "#6b7280");
+
+    const getProjetStatutColor = (statut) => ({
+        en_attente: "#f59e0b",
+        en_cours:   "#3b82f6",
+        termine:    "#10b981",
+        suspendu:   "#ef4444",
+    }[statut] ?? "#6b7280");
+
+    const enAttente = users.filter(u => u.statut === "en_attente");
+    const actifs = users.filter(u => u.statut !== "en_attente");
+
+    const navBtn = (tab, label, badge = null) => (
+        <button
+            onClick={() => setActiveTab(tab)}
+            style={{
+                background: "none", border: "none", cursor: "pointer", fontSize: "14px",
+                color: activeTab === tab ? "white" : "rgba(255,255,255,0.7)",
+                fontWeight: activeTab === tab ? "600" : "400",
+                borderBottom: activeTab === tab ? "2px solid white" : "2px solid transparent",
+                padding: "0 4px", height: "60px"
+            }}
+        >
+            {label} {badge}
+        </button>
+    );
+
+    if (loading) return <div style={{ padding: "24px" }}>Chargement...</div>;
+
+    return (
+        <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+
+            {/* NAVBAR ADMIN */}
+            <nav style={{
+                background: "#7c3aed", color: "white",
+                padding: "0 24px",
+                display: "flex", alignItems: "center", justifyContent: "space-between"
+            }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "32px" }}>
+                    <span style={{ fontWeight: "bold", fontSize: "18px" }}>ProjectFlow — Admin</span>
+                    {navBtn("dashboard", "Tableau de bord")}
+                    {navBtn("users", "Utilisateurs",
+                        enAttente.length > 0 && (
+                            <span style={{ background: "#ef4444", borderRadius: "50%", padding: "1px 6px", fontSize: "11px" }}>
+                                {enAttente.length}
+                            </span>
+                        )
+                    )}
+                    {navBtn("projets", "Projets")}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <button
+                        onClick={() => navigate("/profile")}
+                        style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: "14px" }}
+                    >
+                        👤 {user?.nom}
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", padding: "6px 14px", borderRadius: "6px", cursor: "pointer" }}
+                    >
+                        Déconnexion
+                    </button>
+                </div>
+            </nav>
+
+            <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "32px 24px" }}>
+
+                {success && (
+                    <div style={{ background: "#f0fdf4", color: "#10b981", padding: "12px 16px", borderRadius: "8px", marginBottom: "24px" }}>
+                        ✅ {success}
+                    </div>
+                )}
+
+                {/* ONGLET DASHBOARD */}
+                {activeTab === "dashboard" && stats && (
+                    <div>
+                        <h1 style={{ marginBottom: "24px" }}>Tableau de bord administrateur</h1>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", marginBottom: "32px" }}>
+                            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px", borderLeft: "4px solid #7c3aed" }}>
+                                <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>Utilisateurs total</p>
+                                <p style={{ margin: "8px 0 0", fontSize: "32px", fontWeight: "500" }}>{users.length}</p>
+                            </div>
+                            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px", borderLeft: "4px solid #f59e0b" }}>
+                                <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>En attente</p>
+                                <p style={{ margin: "8px 0 0", fontSize: "32px", fontWeight: "500", color: "#f59e0b" }}>{enAttente.length}</p>
+                            </div>
+                            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px", borderLeft: "4px solid #10b981" }}>
+                                <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>Actifs</p>
+                                <p style={{ margin: "8px 0 0", fontSize: "32px", fontWeight: "500", color: "#10b981" }}>{actifs.length}</p>
+                            </div>
+                            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px", borderLeft: "4px solid #3b82f6" }}>
+                                <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>Projets total</p>
+                                <p style={{ margin: "8px 0 0", fontSize: "32px", fontWeight: "500" }}>{projets.length}</p>
+                            </div>
+                        </div>
+
+                        {enAttente.length > 0 && (
+                            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "12px", padding: "20px" }}>
+                                <h2 style={{ marginTop: 0, color: "#92400e" }}>⏳ Comptes en attente ({enAttente.length})</h2>
+                                {enAttente.map(u => (
+                                    <div key={u.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 0", borderBottom: "1px solid #fde68a" }}>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: "500" }}>{u.nom}</div>
+                                            <div style={{ fontSize: "13px", color: "#92400e" }}>{u.email} — {u.role}</div>
+                                        </div>
+                                        <button onClick={() => updateStatut(u.id, "actif")} style={{ padding: "6px 14px", background: "#10b981", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>
+                                            ✓ Valider
+                                        </button>
+                                        <button onClick={() => updateStatut(u.id, "suspendu")} style={{ padding: "6px 14px", background: "#ef4444", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>
+                                            ✗ Rejeter
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ONGLET UTILISATEURS */}
+                {activeTab === "users" && (
+                    <div>
+                        <h1 style={{ marginBottom: "24px" }}>Gestion des utilisateurs ({users.length})</h1>
+                        <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                                <thead>
+                                    <tr style={{ borderBottom: "2px solid #e2e8f0", textAlign: "left" }}>
+                                        <th style={{ padding: "10px 8px", color: "#64748b" }}>Nom</th>
+                                        <th style={{ padding: "10px 8px", color: "#64748b" }}>Email</th>
+                                        <th style={{ padding: "10px 8px", color: "#64748b" }}>Rôle</th>
+                                        <th style={{ padding: "10px 8px", color: "#64748b" }}>Statut</th>
+                                        <th style={{ padding: "10px 8px", color: "#64748b" }}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.map(u => (
+                                        <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                            <td style={{ padding: "12px 8px", fontWeight: "500" }}>
+                                                {u.nom}
+                                                <div style={{ fontSize: "12px", color: "#94a3b8" }}>@{u.username}</div>
+                                            </td>
+                                            <td style={{ padding: "12px 8px", color: "#64748b" }}>{u.email}</td>
+                                            <td style={{ padding: "12px 8px" }}>
+                                                <select
+                                                    value={u.role}
+                                                    onChange={e => updateRole(u.id, e.target.value)}
+                                                    disabled={u.id === user?.id}
+                                                    style={{ padding: "4px 8px", borderRadius: "6px", border: `1px solid ${getRoleColor(u.role)}`, color: getRoleColor(u.role), background: "transparent", cursor: "pointer" }}
+                                                >
+                                                    <option value="admin">Admin</option>
+                                                    <option value="chef">Chef</option>
+                                                    <option value="membre">Membre</option>
+                                                </select>
+                                            </td>
+                                            <td style={{ padding: "12px 8px" }}>
+                                                <select
+                                                    value={u.statut}
+                                                    onChange={e => updateStatut(u.id, e.target.value)}
+                                                    disabled={u.id === user?.id}
+                                                    style={{ padding: "4px 8px", borderRadius: "6px", border: `1px solid ${getStatutColor(u.statut)}`, color: getStatutColor(u.statut), background: "transparent", cursor: "pointer" }}
+                                                >
+                                                    <option value="actif">Actif</option>
+                                                    <option value="en_attente">En attente</option>
+                                                    <option value="suspendu">Suspendu</option>
+                                                </select>
+                                            </td>
+                                            <td style={{ padding: "12px 8px" }}>
+                                                {u.id !== user?.id && (
+                                                    <button
+                                                        onClick={() => deleteUser(u.id)}
+                                                        style={{ padding: "4px 12px", background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
+                                                    >
+                                                        Supprimer
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* ONGLET PROJETS */}
+                {activeTab === "projets" && (
+                    <div>
+                        <h1 style={{ marginBottom: "24px" }}>Supervision des projets ({projets.length})</h1>
+                        {projets.length === 0 ? (
+                            <p style={{ color: "#94a3b8" }}>Aucun projet créé.</p>
+                        ) : (
+                            projets.map(projet => (
+                                <div key={projet.id} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px", marginBottom: "12px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                                        <div>
+                                            <h3 style={{ margin: "0 0 4px" }}>{projet.titre}</h3>
+                                            <p style={{ color: "#64748b", fontSize: "14px", margin: "0 0 4px" }}>{projet.description}</p>
+                                            <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>
+                                                📅 {projet.date_debut} → {projet.date_fin}
+                                            </p>
+                                        </div>
+                                        <span style={{
+                                            background: getProjetStatutColor(projet.statut),
+                                            color: "white", padding: "3px 12px",
+                                            borderRadius: "20px", fontSize: "12px", flexShrink: 0
+                                        }}>
+                                            {projet.statut?.replace("_", " ")}
+                                        </span>
+                                    </div>
+
+                                    {projet.members && projet.members.length > 0 ? (
+                                        <div>
+                                            <p style={{ fontSize: "13px", fontWeight: "500", color: "#64748b", margin: "0 0 8px" }}>
+                                                👥 Équipe ({projet.members.length} membres) :
+                                            </p>
+                                            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                                                {projet.members.map(m => (
+                                                    <span key={m.id} style={{
+                                                        background: "#f1f5f9", padding: "4px 12px",
+                                                        borderRadius: "20px", fontSize: "12px", color: "#475569"
+                                                    }}>
+                                                        {m.nom} <span style={{ color: getRoleColor(m.role) }}>({m.role})</span>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p style={{ fontSize: "13px", color: "#94a3b8", margin: 0 }}>Aucun membre dans ce projet.</p>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
+}

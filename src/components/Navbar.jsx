@@ -48,7 +48,7 @@ export default function Navbar() {
                 <Link to="/dashboard" style={{ color: "white" }}>Dashboard</Link>
                 <Link to="/projects" style={{ color: "white" }}>Projets</Link>
                 <Link to="/tasks" style={{ color: "white" }}>Tâches</Link>
-                {user?.role === "admin" && (<Link to="/members" style={{ color: "white" }}>Admin</Link>)}
+                {user?.role === "admin" && (<Link to="/admin" style={{ color: "white" }}>Admin</Link>)}
 
                 <Link to="/notifications" style={{ color: "white", position: "relative" }}>
                     🔔

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Link } from "react";
 import API from "../api/api";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -67,6 +67,13 @@ export default function Login() {
                 >
                     {loading ? "Connexion..." : "Se connecter"}
                 </button>
+
+                <p style={{ textAlign: "center", fontSize: "14px", color: "#64748b", marginTop: "16px" }}>
+                    Pas encore de compte ?{" "}
+                    <Link to="/register" style={{ color: "#3b82f6", textDecoration: "none" }}>
+                        S'inscrire
+                    </Link>
+                </p>
 
             </form>
         </div>
