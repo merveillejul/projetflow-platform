@@ -45,4 +45,13 @@ class NotificationController extends Controller
 
         return response()->json(['message'=>'Tout lu']);
     }
+
+    public function destroy($id)
+    {
+        $notification = \App\Models\Notification::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+        $notification->delete();
+        return response()->json(['message' => 'Notification supprimée.']);
+    }
 }

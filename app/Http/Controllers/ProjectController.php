@@ -63,6 +63,18 @@ class ProjectController extends Controller
 
     public function update(Request $request, Project $project)
     {
+        // Si on essaie de terminer le projet
+        if ($request->statut === 'termine') {
+            $totalTaches = $project->tasks()->count();
+            $tachesTerminees = $project->tasks()->where('statut', 'termine')->count();
+
+            if ($totalTaches > 0 && $tachesTerminees < $totalTaches) {
+                return response()->json([
+                    'message' => "Impossible de terminer le projet — {$tachesTerminees}/{$totalTaches} tâches terminées."
+                ], 422);
+            }
+        }
+
         $project->update($request->only([
             'titre', 'description', 'technologies',
             'date_debut', 'date_fin', 'budget', 'statut'

@@ -9,17 +9,17 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // REGISTER — compte en attente de validation admin
+    // REGISTER — compte en attente
     public function register(Request $request)
     {
         $request->validate([
             'username' => 'required|unique:users',
             'nom'      => 'required',
             'email'    => 'required|email|unique:users',
-            'password' => 'required|min:8'
+            'password' => 'required|min:12'
         ]);
 
-        $user = User::create([
+        User::create([
             'username'    => $request->username,
             'nom'         => $request->nom,
             'email'       => $request->email,
@@ -65,26 +65,22 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
-
         return response()->json(['message' => 'Déconnexion réussie']);
     }
 
-    // PROFIL — voir et modifier son propre profil
+    // PROFIL
     public function updateProfile(Request $request)
     {
         $user = $request->user();
-
         $request->validate([
             'nom'   => 'sometimes|string',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
         ]);
-
         $user->update($request->only(['nom', 'email']));
-
         return response()->json($user);
     }
 
-    // LISTE utilisateurs — chef et admin
+    // LISTE utilisateurs
     public function listUsers(Request $request)
     {
         return response()->json(
@@ -92,41 +88,35 @@ class AuthController extends Controller
         );
     }
 
-    // VALIDER un compte — admin uniquement
+    // VALIDER compte
     public function validateAccount(Request $request, User $user)
     {
         $request->validate([
             'statut' => 'required|in:actif,suspendu,en_attente'
         ]);
-
-        $user->update(['statut' => $request->statut]);
-
+        
+        $user->statut = $request->statut;
+        $user->save();
+        $user->refresh(); // Force le rechargement depuis la base
+        
         return response()->json([
             'message' => 'Statut mis à jour.',
-            'user'    => $user
+            'user' => $user
         ]);
     }
 
-    // MODIFIER le rôle — admin uniquement
+    // MODIFIER rôle
     public function updateRole(Request $request, User $user)
     {
-        $request->validate([
-            'role' => 'required|in:admin,chef,membre'
-        ]);
-
+        $request->validate(['role' => 'required|in:admin,chef,membre']);
         $user->update(['role' => $request->role]);
-
-        return response()->json([
-            'message' => 'Rôle mis à jour.',
-            'user'    => $user
-        ]);
+        return response()->json(['message' => 'Rôle mis à jour.', 'user' => $user]);
     }
 
-    // SUPPRIMER un compte — admin uniquement
+    // SUPPRIMER utilisateur
     public function deleteUser(User $user)
     {
         $user->delete();
-
         return response()->json(['message' => 'Utilisateur supprimé.']);
     }
 }

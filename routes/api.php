@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
@@ -12,112 +13,115 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DashboardController;
 use App\Models\Task;
 
-/*
-|--------------------------------------------------------------------------
-| ROUTES PUBLIQUES
-|--------------------------------------------------------------------------
-*/
 Route::get('/', fn() => response()->json(['message' => 'ProjectFlow API fonctionne']));
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 
-/*
-|--------------------------------------------------------------------------
-| ROUTES PROTÉGÉES (tous les rôles connectés)
-|--------------------------------------------------------------------------
-*/
 Route::middleware('auth:sanctum')->group(function () {
 
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user',    fn(Request $request) => $request->user());
+    Route::get('/user', function(Request $request) {
+        $user = $request->user();
+        return response()->json($user);
+    });
     Route::put('/user',    [AuthController::class, 'updateProfile']);
 
-    // Dashboard
-    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
-
-    // Projets — lecture pour tous
-    Route::get('/projects',        [ProjectController::class, 'index']);
-    Route::get('/projects/{project}', [ProjectController::class, 'show']);
-
-    // Projets — écriture réservée chef et admin
-    Route::post('/projects',           [ProjectController::class, 'store'])->middleware('role:admin,chef');
-    Route::put('/projects/{project}',  [ProjectController::class, 'update'])->middleware('role:admin,chef');
-    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->middleware('role:admin,chef');
-
-    // Tâches — lecture pour tous
-    Route::get('/projects/{project}/tasks', [TaskController::class, 'index']);
-    Route::get('/tasks/{task}',             [TaskController::class, 'show']);
-
-    // Tâches — création et suppression réservées chef et admin
-    Route::post('/tasks',        [TaskController::class, 'store'])->middleware('role:admin,chef');
-    Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->middleware('role:admin,chef');
-
-    // Tâches — mise à jour statut accessible à tous (le membre met à jour ses propres tâches)
-    Route::put('/tasks/{task}', [TaskController::class, 'update']);
-
-    // Membres d'un projet — lecture pour tous
-    Route::get('/projects/{project}/members', [ProjectMemberController::class, 'index']);
-
-    // Membres d'un projet — ajout/retrait réservés chef et admin
-    Route::post('/projects/{project}/members',              [ProjectMemberController::class, 'store'])->middleware('role:admin,chef');
-    Route::delete('/projects/{project}/members/{user}',     [ProjectMemberController::class, 'destroy'])->middleware('role:admin,chef');
-
-    // Commentaires — tous les rôles
-    Route::get('/tasks/{task}/comments',    [CommentController::class, 'index']);
-    Route::post('/tasks/{task}/comments',   [CommentController::class, 'store']);
-    Route::delete('/comments/{comment}',    [CommentController::class, 'destroy']);
-
-    // Fichiers — lecture pour tous, upload chef/admin, suppression chef/admin
-    Route::get('/projects/{project}/files',  [FileController::class, 'index']);
-    Route::get('/files/{file}/download',     [FileController::class, 'download']);
-    Route::post('/projects/{project}/files', [FileController::class, 'store'])->middleware('role:admin,chef');
-    Route::delete('/files/{file}',           [FileController::class, 'destroy'])->middleware('role:admin,chef');
-
-    // Notifications — tous les rôles
-    Route::get('/notifications',              [NotificationController::class, 'index']);
-    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
-    Route::post('/notifications/{id}/read',   [NotificationController::class, 'markAsRead']);
-    Route::post('/notifications/read-all',    [NotificationController::class, 'markAllRead']);
-
-    // Utilisateurs — liste pour chef (ajouter membres), détail admin
-    Route::get('/users', [AuthController::class, 'listUsers'])->middleware('role:admin,chef');
-
-    // Admin uniquement — gestion des comptes
-    Route::patch('/users/{user}/validate', [AuthController::class, 'validateAccount'])->middleware('role:admin');
-    Route::put('/users/{user}/role',       [AuthController::class, 'updateRole'])->middleware('role:admin');
-    Route::delete('/users/{user}',         [AuthController::class, 'deleteUser'])->middleware('role:admin');
-
+    // Changement mot de passe — UNE SEULE FOIS avec vérification ancien mdp
     Route::post('/auth/change-password', function (Request $request) {
-        $request->validate(['password' => 'required|min:8']);
+        $request->validate([
+            'current_password' => 'required',
+            'password'         => 'required|min:12|confirmed',
+        ]);
+        if (!Hash::check($request->current_password, $request->user()->password)) {
+            return response()->json(['message' => 'Mot de passe actuel incorrect.'], 422);
+        }
         $request->user()->update([
-            'password'    => bcrypt($request->password),
+            'password'    => Hash::make($request->password),
             'first_login' => false,
         ]);
         return response()->json(['message' => 'Mot de passe mis à jour.']);
     });
 
+    // Mes tâches assignées
     Route::get('/my-tasks', function(Request $request) {
-            return Task::where('assigne_a', $request->user()->id)
-                ->with('project')
-                ->get();
-        });
+        return Task::where('assigne_a', $request->user()->id)
+            ->with('project')
+            ->get();
+    });
 
-        Route::post('/auth/change-password', function (Request $request) {
-        $request->validate([
-            'current_password' => 'required',
-            'password'         => 'required|min:8|confirmed',
-        ]);
+    // Dashboard
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
-        if (!Hash::check($request->current_password, $request->user()->password)) {
-            return response()->json(['message' => 'Mot de passe actuel incorrect.'], 422);
+    // Projets — lecture pour tous
+    Route::get('/projects',           [ProjectController::class, 'index']);
+    Route::get('/projects/{project}', [ProjectController::class, 'show']);
+
+    // Projets — création réservée chef
+    Route::post('/projects', [ProjectController::class, 'store'])->middleware('role:chef');
+
+    // Projets — modification réservée chef (pour changer statut aussi)
+    Route::put('/projects/{project}',    [ProjectController::class, 'update'])->middleware('role:chef');
+    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->middleware('role:chef');
+
+    // Tâches — lecture pour tous
+    Route::get('/projects/{project}/tasks', [TaskController::class, 'index']);
+    Route::get('/tasks/{task}',             [TaskController::class, 'show']);
+
+    // Tâches — création et suppression réservées chef
+    Route::post('/tasks',          [TaskController::class, 'store'])->middleware('role:chef');
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->middleware('role:chef');
+
+    // Tâches — mise à jour statut — membre ne peut mettre à jour QUE ses propres tâches (vérifié dans le controller)
+    Route::put('/tasks/{task}', [TaskController::class, 'update']);
+
+    // Membres
+    Route::get('/projects/{project}/members',           [ProjectMemberController::class, 'index']);
+    Route::post('/projects/{project}/members',          [ProjectMemberController::class, 'store'])->middleware('role:chef');
+    Route::delete('/projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy'])->middleware('role:chef');
+
+    // Commentaires — tous les rôles peuvent commenter
+    Route::get('/tasks/{task}/comments',  [CommentController::class, 'index']);
+    Route::post('/tasks/{task}/comments', [CommentController::class, 'store']);
+    Route::delete('/comments/{comment}',  [CommentController::class, 'destroy']);
+
+    // Fichiers
+    Route::get('/projects/{project}/files',  [FileController::class, 'index']);
+    Route::get('/files/{file}/download',     [FileController::class, 'download']);
+    Route::post('/projects/{project}/files', [FileController::class, 'store'])->middleware('role:chef');
+    Route::delete('/files/{file}',           [FileController::class, 'destroy'])->middleware('role:chef');
+
+    // Notifications
+    Route::get('/notifications',              [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read',   [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all',    [NotificationController::class, 'markAllRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+
+    // Utilisateurs — chef peut voir la liste pour ajouter des membres
+    Route::get('/users', [AuthController::class, 'listUsers'])->middleware('role:admin,chef');
+
+    // Admin uniquement
+    Route::patch('/users/{user}/validate', [AuthController::class, 'validateAccount'])->middleware('role:admin');
+    Route::put('/users/{user}/role',       [AuthController::class, 'updateRole'])->middleware('role:admin');
+    Route::delete('/users/{user}',         [AuthController::class, 'deleteUser'])->middleware('role:admin');
+
+    Route::post('/user/photo', function (Request $request) {
+        $request->validate(['photo' => 'required|image|max:2048']);
+        
+        $user = $request->user();
+        
+        if ($user->photo && \Storage::disk('public')->exists(str_replace(url('storage/'), '', $user->photo))) {
+            \Storage::disk('public')->delete(str_replace(url('storage/'), '', $user->photo));
         }
-
-        $request->user()->update([
-            'password'    => Hash::make($request->password),
-            'first_login' => false,
+        
+        $path = $request->file('photo')->store('photos', 'public');
+        $fullUrl = 'http://192.168.1.179:8000/storage/' . $path;
+        $user->update(['photo' => $fullUrl]);
+        
+        return response()->json([
+            'message' => 'Photo mise à jour.',
+            'photo'   => $fullUrl
         ]);
-
-        return response()->json(['message' => 'Mot de passe mis à jour.']);
     });
 });
