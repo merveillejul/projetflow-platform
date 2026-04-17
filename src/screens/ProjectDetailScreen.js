@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, SafeAreaView,
-    ActivityIndicator, TouchableOpacity, TextInput, Alert
+    ActivityIndicator, TouchableOpacity, TextInput
 } from 'react-native';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-// Composant commentaires par tâche
+// Commentaires — accessible aux deux rôles
 function CommentSection({ task }) {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
@@ -38,7 +38,10 @@ function CommentSection({ task }) {
                         <Text style={styles.commentAuthor}>{c.user?.nom ?? 'Utilisateur'}</Text>
                         <Text style={styles.commentContent}>{c.content}</Text>
                         <Text style={styles.commentDate}>
-                            {new Date(c.created_at).toLocaleDateString('fr-FR')}
+                            {new Date(c.created_at).toLocaleDateString('fr-FR', {
+                                day: '2-digit', month: '2-digit', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                            })}
                         </Text>
                     </View>
                 ))
@@ -127,11 +130,16 @@ export default function ProjectDetailScreen({ route }) {
         </SafeAreaView>
     );
 
+    // Tâches assignées au membre connecté
+    const myTasks = isMembre
+        ? tasks.filter(t => Number(t.assigne_a) === Number(user?.id))
+        : tasks;
+
     return (
         <SafeAreaView style={styles.safe}>
             <ScrollView contentContainerStyle={styles.container}>
 
-                {/* EN-TÊTE */}
+                {/* EN-TÊTE — identique pour tous */}
                 <View style={styles.header}>
                     <View style={styles.headerTop}>
                         <Text style={styles.titre}>{project.titre}</Text>
@@ -155,40 +163,52 @@ export default function ProjectDetailScreen({ route }) {
 
                 {/* TÂCHES */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Tâches ({tasks.length})</Text>
-                    {tasks.length === 0 ? (
-                        <Text style={styles.empty}>Aucune tâche.</Text>
-                    ) : (
-                        tasks.map(task => (
-                            <View key={task.id} style={styles.taskRow}>
-                                <View style={[styles.taskBadge, { backgroundColor: getStatutColor(task.statut) }]}>
-                                    <Text style={styles.taskBadgeText}>{statutLabel(task.statut)}</Text>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.taskTitre}>{task.titre}</Text>
-                                    {task.date_echeance && (
-                                        <Text style={styles.taskDate}>📅 {task.date_echeance}</Text>
-                                    )}
-                                </View>
-                                {/* Chef peut tout changer, membre peut changer ses propres tâches */}
-                                {(isChef || (isMembre && Number(task.assigne_a) === Number(user?.id))) && (
-                                    <TouchableOpacity
-                                        style={[styles.statutBtn, { backgroundColor: getStatutColor(nextStatut(task.statut)) }]}
-                                        onPress={() => updateStatut(task.id, nextStatut(task.statut))}
-                                    >
-                                        <Text style={styles.statutBtnText}>→ {statutLabel(nextStatut(task.statut))}</Text>
-                                    </TouchableOpacity>
+                    <Text style={styles.sectionTitle}>
+                        {isMembre ? `Mes tâches (${myTasks.length})` : `Tâches (${tasks.length})`}
+                    </Text>
+
+                    {/* Membre — voit seulement ses tâches */}
+                    {isMembre && myTasks.length === 0 && (
+                        <Text style={styles.empty}>Aucune tâche assignée dans ce projet.</Text>
+                    )}
+
+                    {/* Chef — voit toutes les tâches avec infos assignation */}
+                    {isChef && tasks.length === 0 && (
+                        <Text style={styles.empty}>Aucune tâche créée.</Text>
+                    )}
+
+                    {(isMembre ? myTasks : tasks).map(task => (
+                        <View key={task.id} style={styles.taskRow}>
+                            <View style={[styles.taskBadge, { backgroundColor: getStatutColor(task.statut) }]}>
+                                <Text style={styles.taskBadgeText}>{statutLabel(task.statut)}</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.taskTitre}>{task.titre}</Text>
+                                {/* Chef voit à qui la tâche est assignée */}
+                                {isChef && task.assigned_user && (
+                                    <Text style={styles.taskAssigne}>👤 {task.assigned_user.nom}</Text>
+                                )}
+                                {task.date_echeance && (
+                                    <Text style={styles.taskDate}>📅 {task.date_echeance}</Text>
                                 )}
                             </View>
-                        ))
-                    )}
+                            {/* Membre peut changer statut de SES tâches, chef peut tout changer */}
+                            {(isChef || (isMembre && Number(task.assigne_a) === Number(user?.id))) && (
+                                <TouchableOpacity
+                                    style={[styles.statutBtn, { backgroundColor: getStatutColor(nextStatut(task.statut)) }]}
+                                    onPress={() => updateStatut(task.id, nextStatut(task.statut))}
+                                >
+                                    <Text style={styles.statutBtnText}>→ {statutLabel(nextStatut(task.statut))}</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    ))}
                 </View>
 
-                {/* ÉQUIPE */}
+                {/* ÉQUIPE — chef voit tout, membre voit juste l'équipe */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Équipe</Text>
 
-                    {/* Chef propriétaire */}
                     {project.owner && (
                         <View style={[styles.memberRow, { marginBottom: 8 }]}>
                             <View style={[styles.avatar, { backgroundColor: '#2563eb' }]}>
@@ -207,29 +227,30 @@ export default function ProjectDetailScreen({ route }) {
                     {members.filter(m => m.id !== project.owner?.id).length === 0 ? (
                         <Text style={styles.empty}>Aucun membre dans l'équipe.</Text>
                     ) : (
-                        members
-                            .filter(m => m.id !== project.owner?.id)
-                            .map(member => (
-                                <View key={member.id} style={styles.memberRow}>
-                                    <View style={styles.avatar}>
-                                        <Text style={styles.avatarText}>{member.nom?.charAt(0).toUpperCase()}</Text>
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.memberNom}>{member.nom}</Text>
-                                        <Text style={styles.memberRole}>Membre</Text>
-                                    </View>
+                        members.filter(m => m.id !== project.owner?.id).map(member => (
+                            <View key={member.id} style={styles.memberRow}>
+                                <View style={styles.avatar}>
+                                    <Text style={styles.avatarText}>{member.nom?.charAt(0).toUpperCase()}</Text>
                                 </View>
-                            ))
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.memberNom}>{member.nom}</Text>
+                                    <Text style={styles.memberRole}>Membre</Text>
+                                </View>
+                            </View>
+                        ))
                     )}
                 </View>
 
-                {/* COMMENTAIRES */}
+                {/* COMMENTAIRES — accessible aux deux mais affichage différent */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Commentaires par tâche</Text>
-                    {tasks.length === 0 ? (
+                    <Text style={styles.sectionTitle}>
+                        {isMembre ? 'Mes commentaires' : 'Commentaires par tâche'}
+                    </Text>
+                    {/* Membre voit seulement les commentaires de ses tâches */}
+                    {(isMembre ? myTasks : tasks).length === 0 ? (
                         <Text style={styles.empty}>Aucune tâche pour commenter.</Text>
                     ) : (
-                        tasks.map(task => (
+                        (isMembre ? myTasks : tasks).map(task => (
                             <CommentSection key={task.id} task={task} />
                         ))
                     )}
@@ -260,6 +281,7 @@ const styles = StyleSheet.create({
     taskBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
     taskBadgeText: { color: 'white', fontSize: 10, fontWeight: '500' },
     taskTitre: { fontSize: 14, color: '#1e293b', fontWeight: '500' },
+    taskAssigne: { fontSize: 11, color: '#64748b', marginTop: 2 },
     taskDate: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
     statutBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
     statutBtnText: { color: 'white', fontSize: 11, fontWeight: '500' },

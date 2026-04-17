@@ -19,8 +19,8 @@ export default function RegisterScreen({ navigation }) {
             Alert.alert('Erreur', 'Les mots de passe ne correspondent pas.');
             return;
         }
-        if (form.password.length < 8) {
-            Alert.alert('Erreur', 'Mot de passe : 8 caractères minimum.');
+        if (form.password.length < 12) {
+            Alert.alert('Erreur', 'Mot de passe : 12 caractères minimum.');
             return;
         }
         setLoading(true);

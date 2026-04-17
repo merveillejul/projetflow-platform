@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, SafeAreaView, Alert } from 'react-native';
 import API from '../services/api';
 
 export default function NotificationsScreen() {
@@ -32,6 +32,27 @@ export default function NotificationsScreen() {
         loadNotifications();
     };
 
+    const deleteNotification = async (id) => {
+        Alert.alert('Supprimer', 'Supprimer cette notification ?', [
+            { text: 'Annuler', style: 'cancel' },
+            {
+                text: 'Supprimer',
+                style: 'destructive',
+                onPress: async () => {
+                    await API.delete(`/notifications/${id}`);
+                    loadNotifications();
+                }
+            }
+        ]);
+    };
+
+    const getTypeIcon = (type) => ({
+        task_assigned:   '📋',
+        task_updated:    '🔄',
+        comment_added:   '💬',
+        project_updated: '📁',
+    }[type] ?? '🔔');
+
     if (loading) return (
         <SafeAreaView style={styles.safe}>
             <ActivityIndicator size="large" color="#1e293b" style={{ marginTop: 40 }} />
@@ -54,10 +75,23 @@ export default function NotificationsScreen() {
                 ListEmptyComponent={<Text style={styles.empty}>Aucune notification.</Text>}
                 renderItem={({ item }) => (
                     <View style={[styles.card, !item.is_read && styles.unread]}>
-                        <Text style={styles.message}>{item.message}</Text>
-                        <Text style={styles.date}>
-                            {new Date(item.created_at).toLocaleDateString('fr-FR')}
-                        </Text>
+                        <View style={styles.cardHeader}>
+                            <Text style={styles.icon}>{getTypeIcon(item.type)}</Text>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.message, !item.is_read && { fontWeight: '600', color: '#1e293b' }]}>
+                                    {item.message}
+                                </Text>
+                                <Text style={styles.date}>
+                                    {new Date(item.created_at).toLocaleDateString('fr-FR', {
+                                        day: '2-digit', month: '2-digit', year: 'numeric',
+                                        hour: '2-digit', minute: '2-digit'
+                                    })}
+                                </Text>
+                            </View>
+                            <TouchableOpacity onPress={() => deleteNotification(item.id)} style={styles.deleteBtn}>
+                                <Text style={styles.deleteBtnText}>🗑</Text>
+                            </TouchableOpacity>
+                        </View>
                         {!item.is_read && (
                             <TouchableOpacity style={styles.readBtn} onPress={() => markAsRead(item.id)}>
                                 <Text style={styles.readBtnText}>Marquer lu</Text>
@@ -80,8 +114,12 @@ const styles = StyleSheet.create({
         shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2
     },
     unread: { borderLeftWidth: 4, borderLeftColor: '#3b82f6' },
-    message: { fontSize: 14, color: '#1e293b', marginBottom: 6 },
-    date: { fontSize: 12, color: '#94a3b8', marginBottom: 8 },
-    readBtn: { alignSelf: 'flex-start', padding: 6, paddingHorizontal: 12, backgroundColor: '#eff6ff', borderRadius: 6 },
+    cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    icon: { fontSize: 20, marginTop: 2 },
+    message: { fontSize: 14, color: '#64748b', marginBottom: 4, flex: 1 },
+    date: { fontSize: 11, color: '#94a3b8' },
+    deleteBtn: { padding: 4 },
+    deleteBtnText: { fontSize: 16 },
+    readBtn: { marginTop: 10, alignSelf: 'flex-start', padding: 6, paddingHorizontal: 12, backgroundColor: '#eff6ff', borderRadius: 6 },
     readBtnText: { color: '#3b82f6', fontSize: 12, fontWeight: '500' }
 });
