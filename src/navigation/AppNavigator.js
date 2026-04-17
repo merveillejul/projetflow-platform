@@ -6,14 +6,33 @@ import { Text } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
 import LoginScreen from '../screens/LoginScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import ProjectsScreen from '../screens/ProjectsScreen';
+import ProjectDetailScreen from '../screens/ProjectDetailScreen';
 import TasksScreen from '../screens/TasksScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+
+function ProjectsStack() {
+    return (
+        <Stack.Navigator>
+            <Stack.Screen
+                name="ProjectsList"
+                component={ProjectsScreen}
+                options={{ title: 'Projets' }}
+            />
+            <Stack.Screen
+                name="ProjectDetail"
+                component={ProjectDetailScreen}
+                options={({ route }) => ({ title: route.params.titre })}
+            />
+        </Stack.Navigator>
+    );
+}
 
 function MainTabs() {
     return (
@@ -35,7 +54,7 @@ function MainTabs() {
             />
             <Tab.Screen
                 name="Projects"
-                component={ProjectsScreen}
+                component={ProjectsStack}
                 options={{
                     title: 'Projets',
                     tabBarIcon: () => <Text style={{ fontSize: 20 }}>📁</Text>
@@ -74,6 +93,7 @@ export default function AppNavigator() {
 
     if (loading) return null;
 
+    // Pas connecté → Login
     if (!user) {
         return (
             <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -82,5 +102,15 @@ export default function AppNavigator() {
         );
     }
 
+    // Première connexion → Changer mot de passe obligatoire
+    if (user.first_login === 1 || user.first_login === true) {
+        return (
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+            </Stack.Navigator>
+        );
+    }
+
+    // Connecté normalement → App principale
     return <MainTabs />;
 }
