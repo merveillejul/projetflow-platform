@@ -11,6 +11,10 @@ import Projects from "./pages/Projects";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
+
 
 export default function App() {
     return (
@@ -52,6 +56,9 @@ export default function App() {
                 <Route path="/profile" element={
                     <ProtectedRoute><Profile /></ProtectedRoute>
                 } />
+                
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>
         </BrowserRouter>
     );
