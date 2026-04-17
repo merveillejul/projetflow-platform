@@ -6,21 +6,21 @@ import { useAuth } from '../context/AuthContext';
 export default function LoginScreen({ navigation }) {
 
     const { login } = useAuth();
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
-        if (!email || !password) {
+        if (!username || !password) {
             Alert.alert('Erreur', 'Remplis tous les champs.');
             return;
         }
         setLoading(true);
         try {
-            const res = await API.post('/login', { email, password });
+            const res = await API.post('/login', { username, password });
             await login(res.data.user, res.data.token);
         } catch (err) {
-            Alert.alert('Erreur', 'Email ou mot de passe incorrect.');
+            Alert.alert('Erreur', 'Nom d\'utilisateur ou mot de passe incorrect.');
         } finally {
             setLoading(false);
         }
@@ -33,10 +33,9 @@ export default function LoginScreen({ navigation }) {
 
             <TextInput
                 style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                placeholder="Nom d'utilisateur"
+                value={username}
+                onChangeText={setUsername}
                 autoCapitalize="none"
             />
 
@@ -57,6 +56,15 @@ export default function LoginScreen({ navigation }) {
                     ? <ActivityIndicator color="white" />
                     : <Text style={styles.buttonText}>Se connecter</Text>
                 }
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={{ marginTop: 12 }}
+            >
+                <Text style={{ textAlign: 'center', color: '#7c3aed', fontSize: 14 }}>
+                    Mot de passe oublié ?
+                </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -81,7 +89,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#1e293b',
+        color: '#7c3aed',
         textAlign: 'center',
         marginBottom: 8
     },

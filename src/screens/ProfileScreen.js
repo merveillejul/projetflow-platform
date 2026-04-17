@@ -6,7 +6,7 @@ import API from '../services/api';
 
 export default function ProfileScreen() {
 
-    const { user, login } = useAuth();
+    const { user, logout, login } = useAuth();
     const [pwForm, setPwForm] = useState({ current_password: '', password: '', password_confirmation: '' });
     const [pwLoading, setPwLoading] = useState(false);
     const [photoLoading, setPhotoLoading] = useState(false);
