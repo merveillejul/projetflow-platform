@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
-
 
 function ChangePasswordForm() {
     const [form, setForm] = useState({ current_password: "", password: "", password_confirmation: "" });
@@ -17,8 +16,8 @@ function ChangePasswordForm() {
             setError("Les mots de passe ne correspondent pas.");
             return;
         }
-        if (form.password.length < 8) {
-            setError("Le mot de passe doit contenir au moins 8 caractères.");
+        if (form.password.length < 12) {
+            setError("Le mot de passe doit contenir au moins 12 caractères.");
             return;
         }
         setLoading(true);
@@ -37,70 +36,58 @@ function ChangePasswordForm() {
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {success && <p style={{ color: "#10b981", background: "#f0fdf4", padding: "10px", borderRadius: "8px", margin: 0 }}>{success}</p>}
             {error && <p style={{ color: "#ef4444", background: "#fef2f2", padding: "10px", borderRadius: "8px", margin: 0 }}>{error}</p>}
-
             <div>
                 <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", fontSize: "14px" }}>Mot de passe actuel</label>
-                <input
-                    type="password"
-                    value={form.current_password}
-                    onChange={e => setForm({ ...form, current_password: e.target.value })}
-                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }}
-                />
+                <input type="password" value={form.current_password} onChange={e => setForm({ ...form, current_password: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }} />
             </div>
             <div>
                 <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", fontSize: "14px" }}>Nouveau mot de passe</label>
-                <input
-                    type="password"
-                    value={form.password}
-                    onChange={e => setForm({ ...form, password: e.target.value })}
-                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }}
-                />
+                <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }} />
             </div>
             <div>
                 <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", fontSize: "14px" }}>Confirmer le nouveau mot de passe</label>
-                <input
-                    type="password"
-                    value={form.password_confirmation}
-                    onChange={e => setForm({ ...form, password_confirmation: e.target.value })}
-                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }}
-                />
+                <input type="password" value={form.password_confirmation} onChange={e => setForm({ ...form, password_confirmation: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }} />
             </div>
-            <button
-                onClick={handleSubmit}
-                disabled={loading}
-                style={{ padding: "12px", background: "#1e293b", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "15px" }}
-            >
+            <button onClick={handleSubmit} disabled={loading}
+                style={{ padding: "12px", background: "#1e293b", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "15px" }}>
                 {loading ? "Mise à jour..." : "Changer le mot de passe"}
             </button>
         </div>
     );
 }
+
 export default function Profile() {
 
-    const { user, logout } = useAuth();
+    const { user, logout, login } = useAuth();
     const navigate = useNavigate();
+    const fileInputRef = useRef(null);
     const [form, setForm] = useState({ nom: "", email: "" });
     const [success, setSuccess] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [photoLoading, setPhotoLoading] = useState(false);
+    const [photoUrl, setPhotoUrl] = useState(null);
 
     useEffect(() => {
         API.get("/user").then(res => {
-            setForm({
-                nom:   res.data.nom   || "",
-                email: res.data.email || "",
-            });
+            setForm({ nom: res.data.nom || "", email: res.data.email || "" });
+            if (res.data.photo) {
+                // Si c'est un chemin relatif, construire l'URL complète
+                const photoUrl = res.data.photo.startsWith('http')
+                    ? res.data.photo
+                    : `http://192.168.1.179:8000/storage/${res.data.photo}`;
+                setPhotoUrl(photoUrl);
+            }
         });
     }, []);
 
-    const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
+    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
     const updateProfile = async () => {
-        setSuccess("");
-        setError("");
-        setLoading(true);
+        setSuccess(""); setError(""); setLoading(true);
         try {
             await API.put("/user", form);
             setSuccess("Profil mis à jour avec succès !");
@@ -111,43 +98,44 @@ export default function Profile() {
         }
     };
 
+    const handlePhotoChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setPhotoLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append("photo", file);
+            const res = await API.post("/user/photo", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            setPhotoUrl(res.data.photo);
+            setSuccess("Photo mise à jour !");
+            setTimeout(() => setSuccess(""), 3000);
+        } catch (err) {
+            setError("Erreur lors de l'upload de la photo.");
+        } finally {
+            setPhotoLoading(false);
+        }
+    };
+
     const handleLogout = async () => {
         await API.post("/logout");
         logout();
         navigate("/");
     };
 
-    const getRoleLabel = (role) => ({
-        admin: "Administrateur",
-        chef:  "Chef de projet",
-        membre: "Membre",
-    }[role] ?? role);
-
-    const getRoleColor = (role) => ({
-        admin:  "#7c3aed",
-        chef:   "#2563eb",
-        membre: "#059669",
-    }[role] ?? "#6b7280");
+    const getRoleLabel = (role) => ({ admin: "Administrateur", chef: "Chef de projet", membre: "Membre" }[role] ?? role);
+    const getRoleColor = (role) => ({ admin: "#7c3aed", chef: "#2563eb", membre: "#059669" }[role] ?? "#6b7280");
 
     return (
         <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
 
-            {/* NAVBAR selon le rôle */}
             {user?.role === "admin" ? (
-                <nav style={{
-                    background: "#7c3aed", color: "white",
-                    padding: "0 24px", height: "60px",
-                    display: "flex", alignItems: "center", justifyContent: "space-between"
-                }}>
+                <nav style={{ background: "#7c3aed", color: "white", padding: "0 24px", height: "60px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontWeight: "bold", fontSize: "18px" }}>ProjectFlow — Admin</span>
-                    <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                        <button
-                            onClick={() => navigate("/admin")}
-                            style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: "14px" }}
-                        >
-                            ← Retour au tableau de bord
-                        </button>
-                    </div>
+                    <button onClick={() => navigate("/admin")} style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: "14px" }}>
+                        ← Retour au tableau de bord
+                    </button>
                 </nav>
             ) : (
                 <Navbar />
@@ -155,25 +143,53 @@ export default function Profile() {
 
             <div style={{ maxWidth: "500px", margin: "40px auto", padding: "0 24px" }}>
 
-                {/* AVATAR */}
+                {/* AVATAR AVEC PHOTO */}
                 <div style={{ textAlign: "center", marginBottom: "32px" }}>
-                    <div style={{
-                        width: "80px", height: "80px", borderRadius: "50%",
-                        background: getRoleColor(user?.role), color: "white",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "32px", fontWeight: "500", margin: "0 auto 16px"
-                    }}>
-                        {user?.nom?.charAt(0).toUpperCase()}
+                    <div style={{ position: "relative", display: "inline-block", margin: "0 auto 16px" }}>
+                        {photoUrl ? (
+                            <img
+                                src={photoUrl}
+                                alt="Photo de profil"
+                                style={{ width: "80px", height: "80px", borderRadius: "50%", objectFit: "cover", border: `3px solid ${getRoleColor(user?.role)}`, display: "block" }}
+                            />
+                        ) : (
+                            <div style={{
+                                width: "80px", height: "80px", borderRadius: "50%",
+                                background: getRoleColor(user?.role), color: "white",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: "32px", fontWeight: "500"
+                            }}>
+                                {user?.nom?.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={photoLoading}
+                            title="Changer la photo"
+                            style={{
+                                position: "absolute", bottom: "-4px", right: "-4px",
+                                width: "28px", height: "28px", borderRadius: "50%",
+                                background: "#1e293b", border: "2px solid white",
+                                cursor: "pointer", display: "flex", alignItems: "center",
+                                justifyContent: "center", fontSize: "13px", padding: 0
+                            }}
+                        >
+                            {photoLoading ? "⏳" : "📷"}
+                        </button>
+
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoChange}
+                            style={{ display: "none" }}
+                        />
                     </div>
-                    <h2 style={{ margin: "0 0 4px" }}>{user?.nom}</h2>
-                    <p style={{ margin: "0 0 8px", color: "#64748b", fontSize: "14px" }}>
-                        @{user?.username}
-                    </p>
-                    <span style={{
-                        background: getRoleColor(user?.role),
-                        color: "white", padding: "4px 14px",
-                        borderRadius: "20px", fontSize: "13px"
-                    }}>
+
+                    <h2 style={{ margin: "16px 0 4px" }}>{user?.nom}</h2>
+                    <p style={{ margin: "0 0 8px", color: "#64748b", fontSize: "14px" }}>@{user?.username}</p>
+                    <span style={{ background: getRoleColor(user?.role), color: "white", padding: "4px 14px", borderRadius: "20px", fontSize: "13px" }}>
                         {getRoleLabel(user?.role)}
                     </span>
                 </div>
@@ -181,68 +197,43 @@ export default function Profile() {
                 {/* FORMULAIRE */}
                 <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", marginBottom: "16px" }}>
                     <h3 style={{ marginTop: 0 }}>Modifier mon profil</h3>
-
                     {success && <p style={{ color: "#10b981", background: "#f0fdf4", padding: "10px", borderRadius: "8px" }}>{success}</p>}
                     {error && <p style={{ color: "#ef4444", background: "#fef2f2", padding: "10px", borderRadius: "8px" }}>{error}</p>}
-
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                         <div>
                             <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", fontSize: "14px" }}>Nom complet</label>
-                            <input
-                                name="nom"
-                                value={form.nom}
-                                onChange={handleChange}
-                                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }}
-                            />
+                            <input name="nom" value={form.nom} onChange={handleChange}
+                                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }} />
                         </div>
-
                         <div>
                             <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", fontSize: "14px" }}>Email</label>
-                            <input
-                                name="email"
-                                type="email"
-                                value={form.email}
-                                onChange={handleChange}
-                                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }}
-                            />
+                            <input name="email" type="email" value={form.email} onChange={handleChange}
+                                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }} />
                         </div>
-
                         <div>
                             <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", fontSize: "14px" }}>Username</label>
-                            <input
-                                value={user?.username}
-                                disabled
-                                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#94a3b8", boxSizing: "border-box" }}
-                            />
+                            <input value={user?.username} disabled
+                                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#94a3b8", boxSizing: "border-box" }} />
                             <p style={{ fontSize: "12px", color: "#94a3b8", margin: "4px 0 0" }}>Non modifiable.</p>
                         </div>
-
-                        <button
-                            onClick={updateProfile}
-                            disabled={loading}
-                            style={{ padding: "12px", background: getRoleColor(user?.role), color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "15px" }}
-                        >
+                        <button onClick={updateProfile} disabled={loading}
+                            style={{ padding: "12px", background: getRoleColor(user?.role), color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "15px" }}>
                             {loading ? "Mise à jour..." : "Enregistrer"}
                         </button>
                     </div>
                 </div>
 
-                {/* MODIFICATION MOT DE PASSE */}
+                {/* MOT DE PASSE */}
                 <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", marginBottom: "16px" }}>
                     <h3 style={{ marginTop: 0 }}>Changer mon mot de passe</h3>
-
                     <ChangePasswordForm />
                 </div>
 
                 {/* DÉCONNEXION */}
-                <button
-                    onClick={handleLogout}
-                    style={{ width: "100%", padding: "12px", background: "transparent", border: "1px solid #ef4444", color: "#ef4444", borderRadius: "8px", cursor: "pointer", fontSize: "15px" }}
-                >
+                <button onClick={handleLogout}
+                    style={{ width: "100%", padding: "12px", background: "transparent", border: "1px solid #ef4444", color: "#ef4444", borderRadius: "8px", cursor: "pointer", fontSize: "15px" }}>
                     Se déconnecter
                 </button>
-
-
             </div>
         </div>
     );

@@ -12,6 +12,7 @@ export default function AdminDashboard() {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [success, setSuccess] = useState("");
+    const [error, setError] = useState("");
     const [activeTab, setActiveTab] = useState("dashboard");
 
     useEffect(() => {
@@ -25,9 +26,9 @@ export default function AdminDashboard() {
                 API.get("/dashboard/stats"),
                 API.get("/projects")
             ]);
-            setUsers(usersRes.data);
-            setStats(statsRes.data);
-            setProjets(projetsRes.data);
+            setUsers([...usersRes.data]);
+            setStats({ ...statsRes.data });
+            setProjets([...projetsRes.data]);
         } catch (err) {
             console.log(err);
         } finally {
@@ -36,25 +37,39 @@ export default function AdminDashboard() {
     };
 
     const updateStatut = async (userId, statut) => {
-        await API.patch(`/users/${userId}/validate`, { statut });
-        setSuccess("Statut mis à jour !");
-        setTimeout(() => setSuccess(""), 3000);
-        fetchAll();
+        try {
+            await API.patch(`/users/${userId}/validate`, { statut });
+            await fetchAll(); // IMPORTANT — attendre
+            setSuccess("Statut mis à jour !");
+            setTimeout(() => setSuccess(""), 3000);
+        } catch (err) {
+            console.log(err);
+            setError("Erreur lors de la mise à jour.");
+            setTimeout(() => setError(""), 3000);
+        }
     };
 
     const updateRole = async (userId, role) => {
-        await API.put(`/users/${userId}/role`, { role });
-        setSuccess("Rôle mis à jour !");
-        setTimeout(() => setSuccess(""), 3000);
-        fetchAll();
+        try {
+            await API.put(`/users/${userId}/role`, { role });
+            setSuccess("Rôle mis à jour !");
+            setTimeout(() => setSuccess(""), 3000);
+            await fetchAll();
+        } catch (err) {
+            console.log(err);
+        }
     };
 
     const deleteUser = async (userId) => {
         if (!window.confirm("Supprimer cet utilisateur définitivement ?")) return;
-        await API.delete(`/users/${userId}`);
-        setSuccess("Utilisateur supprimé.");
-        setTimeout(() => setSuccess(""), 3000);
-        fetchAll();
+        try {
+            await API.delete(`/users/${userId}`);
+            setSuccess("Utilisateur supprimé.");
+            setTimeout(() => setSuccess(""), 3000);
+            await fetchAll();
+        } catch (err) {
+            console.log(err);
+        }
     };
 
     const handleLogout = async () => {
@@ -105,7 +120,6 @@ export default function AdminDashboard() {
     return (
         <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
 
-            {/* NAVBAR ADMIN */}
             <nav style={{
                 background: "#7c3aed", color: "white",
                 padding: "0 24px",
@@ -146,8 +160,13 @@ export default function AdminDashboard() {
                         ✅ {success}
                     </div>
                 )}
+                {error && (
+                    <div style={{ background: "#fef2f2", color: "#ef4444", padding: "12px 16px", borderRadius: "8px", marginBottom: "24px" }}>
+                        ❌ {error}
+                    </div>
+                )}
 
-                {/* ONGLET DASHBOARD */}
+                {/* DASHBOARD */}
                 {activeTab === "dashboard" && stats && (
                     <div>
                         <h1 style={{ marginBottom: "24px" }}>Tableau de bord administrateur</h1>
@@ -174,25 +193,38 @@ export default function AdminDashboard() {
                             <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "12px", padding: "20px" }}>
                                 <h2 style={{ marginTop: 0, color: "#92400e" }}>⏳ Comptes en attente ({enAttente.length})</h2>
                                 {enAttente.map(u => (
-                                    <div key={u.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 0", borderBottom: "1px solid #fde68a" }}>
+                                    <div key={u.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 0", borderBottom: "1px solid #fde68a" }}>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: "500" }}>{u.nom}</div>
-                                            <div style={{ fontSize: "13px", color: "#92400e" }}>{u.email} — {u.role}</div>
+                                            <div style={{ fontSize: "13px", color: "#92400e" }}>{u.email}</div>
+                                            <div style={{ fontSize: "12px", color: "#b45309" }}>@{u.username} — {u.role}</div>
                                         </div>
-                                        <button onClick={() => updateStatut(u.id, "actif")} style={{ padding: "6px 14px", background: "#10b981", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>
+                                        <button
+                                            onClick={() => updateStatut(u.id, "actif")}
+                                            style={{ padding: "8px 16px", background: "#10b981", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "500" }}
+                                        >
                                             ✓ Valider
                                         </button>
-                                        <button onClick={() => updateStatut(u.id, "suspendu")} style={{ padding: "6px 14px", background: "#ef4444", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}>
+                                        <button
+                                            onClick={() => updateStatut(u.id, "suspendu")}
+                                            style={{ padding: "8px 16px", background: "#ef4444", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "500" }}
+                                        >
                                             ✗ Rejeter
                                         </button>
                                     </div>
                                 ))}
                             </div>
                         )}
+
+                        {enAttente.length === 0 && (
+                            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "12px", padding: "20px", textAlign: "center" }}>
+                                <p style={{ color: "#10b981", margin: 0 }}>✅ Aucun compte en attente de validation.</p>
+                            </div>
+                        )}
                     </div>
                 )}
 
-                {/* ONGLET UTILISATEURS */}
+                {/* UTILISATEURS */}
                 {activeTab === "users" && (
                     <div>
                         <h1 style={{ marginBottom: "24px" }}>Gestion des utilisateurs ({users.length})</h1>
@@ -257,7 +289,7 @@ export default function AdminDashboard() {
                     </div>
                 )}
 
-                {/* ONGLET PROJETS */}
+                {/* PROJETS */}
                 {activeTab === "projets" && (
                     <div>
                         <h1 style={{ marginBottom: "24px" }}>Supervision des projets ({projets.length})</h1>
@@ -282,7 +314,6 @@ export default function AdminDashboard() {
                                             {projet.statut?.replace("_", " ")}
                                         </span>
                                     </div>
-
                                     {projet.members && projet.members.length > 0 ? (
                                         <div>
                                             <p style={{ fontSize: "13px", fontWeight: "500", color: "#64748b", margin: "0 0 8px" }}>
@@ -290,10 +321,7 @@ export default function AdminDashboard() {
                                             </p>
                                             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                                                 {projet.members.map(m => (
-                                                    <span key={m.id} style={{
-                                                        background: "#f1f5f9", padding: "4px 12px",
-                                                        borderRadius: "20px", fontSize: "12px", color: "#475569"
-                                                    }}>
+                                                    <span key={m.id} style={{ background: "#f1f5f9", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", color: "#475569" }}>
                                                         {m.nom} <span style={{ color: getRoleColor(m.role) }}>({m.role})</span>
                                                     </span>
                                                 ))}
@@ -307,7 +335,6 @@ export default function AdminDashboard() {
                         )}
                     </div>
                 )}
-
             </div>
         </div>
     );

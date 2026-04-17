@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import API from "../api/api";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
+import { formatDateTime } from "../utils/date";
 
 function CommentSection({ task }) {
+    const { user } = useAuth();
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
 
@@ -40,9 +42,17 @@ function CommentSection({ task }) {
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
                             <div>
                                 <span style={{ fontWeight: "500", fontSize: "13px", color: "#1e293b" }}>{c.user?.nom ?? "Utilisateur"}</span>
-                                <span style={{ fontSize: "11px", color: "#94a3b8", marginLeft: "8px" }}>{new Date(c.created_at).toLocaleDateString("fr-FR")}</span>
+                                <span style={{ fontSize: "11px", color: "#94a3b8", marginLeft: "8px" }}>{formatDateTime(c.created_at)}</span>
                             </div>
-                            <button onClick={() => deleteComment(c.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "12px" }}>Supprimer</button>
+                            {/* Seul le chef ou l'auteur du commentaire peut supprimer */}
+                            {(user?.role === 'chef' || c.user_id === user?.id) && (
+                                <button
+                                    onClick={() => deleteComment(c.id)}
+                                    style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "12px" }}
+                                >
+                                    Supprimer
+                                </button>
+                            )}
                         </div>
                         <p style={{ margin: "6px 0 0", fontSize: "14px", color: "#64748b" }}>{c.content}</p>
                     </div>

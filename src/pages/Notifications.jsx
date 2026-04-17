@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getNotifications, markAsRead, markAllRead } from "../api/notificationApi";
 import Navbar from "../components/Navbar";
+import { formatDateTime } from "../utils/date";
+import API from "../api/api";
 
 export default function Notifications() {
 
@@ -32,15 +34,17 @@ export default function Notifications() {
         load();
     };
 
-    const getTypeIcon = (type) => {
-        const icons = {
-            task_assigned: "📋",
-            task_updated:  "🔄",
-            comment_added: "💬",
-            project_updated: "📁",
-        };
-        return icons[type] ?? "🔔";
+    const deleteNotification = async (id) => {
+        await API.delete(`/notifications/${id}`);
+        load();
     };
+
+    const getTypeIcon = (type) => ({
+        task_assigned:   "📋",
+        task_updated:    "🔄",
+        comment_added:   "💬",
+        project_updated: "📁",
+    }[type] ?? "🔔");
 
     const unreadCount = notifications.filter(n => !n.is_read).length;
 
@@ -61,7 +65,6 @@ export default function Notifications() {
                             </p>
                         )}
                     </div>
-
                     {unreadCount > 0 && (
                         <button
                             onClick={handleReadAll}
@@ -98,23 +101,29 @@ export default function Notifications() {
                                         {n.message}
                                     </p>
                                     <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#94a3b8" }}>
-                                        {new Date(n.created_at).toLocaleDateString("fr-FR", {
-                                            day: "numeric", month: "long", hour: "2-digit", minute: "2-digit"
-                                        })}
+                                        {formatDateTime(n.created_at)}
                                     </p>
                                 </div>
 
-                                {!n.is_read && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#3b82f6" }} />
-                                        <button
-                                            onClick={() => handleRead(n.id)}
-                                            style={{ padding: "4px 12px", borderRadius: "6px", border: "1px solid #3b82f6", color: "#3b82f6", background: "transparent", cursor: "pointer", fontSize: "12px" }}
-                                        >
-                                            Marquer lu
-                                        </button>
-                                    </div>
-                                )}
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                                    {!n.is_read && (
+                                        <>
+                                            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#3b82f6" }} />
+                                            <button
+                                                onClick={() => handleRead(n.id)}
+                                                style={{ padding: "4px 12px", borderRadius: "6px", border: "1px solid #3b82f6", color: "#3b82f6", background: "transparent", cursor: "pointer", fontSize: "12px" }}
+                                            >
+                                                Marquer lu
+                                            </button>
+                                        </>
+                                    )}
+                                    <button
+                                        onClick={() => deleteNotification(n.id)}
+                                        style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid #ef4444", color: "#ef4444", background: "transparent", cursor: "pointer", fontSize: "12px" }}
+                                    >
+                                        🗑
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

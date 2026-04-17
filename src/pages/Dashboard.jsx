@@ -4,7 +4,11 @@ import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 
-const COLORS = ["#f59e0b", "#3b82f6", "#10b981"];
+const COLOR_MAP = {
+    "À faire":  "#f59e0b",
+    "En cours": "#3b82f6",
+    "Terminé":  "#10b981",
+};
 
 export default function Dashboard() {
 
@@ -87,7 +91,7 @@ export default function Dashboard() {
                                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                                 >
                                     {data.filter(d => d.value > 0).map((entry, index) => (
-                                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                                        <Cell key={index} fill={COLOR_MAP[entry.name]} />
                                     ))}
                                 </Pie>
                                 <Tooltip formatter={(value) => [`${value} tâche(s)`, ""]} />
