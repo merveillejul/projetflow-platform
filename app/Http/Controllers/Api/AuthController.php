@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use App\Mail\CompteValide;
+use Illuminate\Support\Facades\Mail;
+
 
 class AuthController extends Controller
 {
@@ -37,10 +40,15 @@ class AuthController extends Controller
     // LOGIN
     public function login(Request $request)
     {
-        $user = User::where('email', $request->email)->first();
+        $request->validate([
+            'username' => 'required',
+            'password' => 'required',
+        ]);
+
+        $user = User::where('username', $request->username)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Email ou mot de passe incorrect.'], 401);
+            return response()->json(['message' => 'Nom d\'utilisateur ou mot de passe incorrect.'], 401);
         }
 
         if ($user->statut === 'en_attente') {
@@ -60,6 +68,7 @@ class AuthController extends Controller
             'first_login' => $user->first_login,
         ]);
     }
+
 
     // LOGOUT
     public function logout(Request $request)
@@ -97,12 +106,14 @@ class AuthController extends Controller
         
         $user->statut = $request->statut;
         $user->save();
-        $user->refresh(); // Force le rechargement depuis la base
+        $user->refresh();
+
+        // Envoyer email si compte validé
+        if ($request->statut === 'actif') {
+            Mail::to($user->email)->send(new CompteValide($user));
+        }
         
-        return response()->json([
-            'message' => 'Statut mis à jour.',
-            'user' => $user
-        ]);
+        return response()->json(['message' => 'Statut mis à jour.', 'user' => $user]);
     }
 
     // MODIFIER rôle

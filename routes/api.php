@@ -12,6 +12,10 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DashboardController;
 use App\Models\Task;
+use App\Mail\ReinitialisationMdp;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+
 
 Route::get('/', fn() => response()->json(['message' => 'ProjectFlow API fonctionne']));
 Route::post('/register', [AuthController::class, 'register']);
@@ -124,4 +128,59 @@ Route::middleware('auth:sanctum')->group(function () {
             'photo'   => $fullUrl
         ]);
     });
+
+    Route::post('/auth/forgot-password', function (Request $request) {
+        $request->validate(['email' => 'required|email']);
+        
+        $user = \App\Models\User::where('email', $request->email)->first();
+        
+        if (!$user) {
+            // On répond toujours OK pour ne pas révéler si l'email existe
+            return response()->json(['message' => 'Si cet email existe, un lien vous a été envoyé.']);
+        }
+        
+        // Générer token
+        $token = Str::random(64);
+        
+        \DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            ['token' => Hash::make($token), 'created_at' => now()]
+        );
+        
+        $resetUrl = 'http://localhost:5173/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+        
+        Mail::to($user->email)->send(new ReinitialisationMdp($user->nom, $resetUrl));
+        
+        return response()->json(['message' => 'Si cet email existe, un lien vous a été envoyé.']);
+    });
+
+    Route::post('/auth/reset-password', function (Request $request) {
+        $request->validate([
+            'email'    => 'required|email',
+            'token'    => 'required',
+            'password' => 'required|min:12|confirmed',
+        ]);
+        
+        $record = \DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->first();
+        
+        if (!$record || !Hash::check($request->token, $record->token)) {
+            return response()->json(['message' => 'Token invalide ou expiré.'], 422);
+        }
+        
+        // Vérifier expiration (60 minutes)
+        if (now()->diffInMinutes($record->created_at) > 60) {
+            \DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return response()->json(['message' => 'Token expiré. Refaites la demande.'], 422);
+        }
+        
+        $user = \App\Models\User::where('email', $request->email)->first();
+        $user->update(['password' => Hash::make($request->password)]);
+        
+        \DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+        
+        return response()->json(['message' => 'Mot de passe réinitialisé avec succès.']);
+    });
+    
 });
