@@ -6,6 +6,7 @@ import { Text } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
 import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import ProjectsScreen from '../screens/ProjectsScreen';
@@ -47,42 +48,27 @@ function MainTabs() {
             <Tab.Screen
                 name="Dashboard"
                 component={DashboardScreen}
-                options={{
-                    title: 'Accueil',
-                    tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text>
-                }}
+                options={{ title: 'Accueil', tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text> }}
             />
             <Tab.Screen
                 name="Projects"
                 component={ProjectsStack}
-                options={{
-                    title: 'Projets',
-                    tabBarIcon: () => <Text style={{ fontSize: 20 }}>📁</Text>
-                }}
+                options={{ title: 'Projets', tabBarIcon: () => <Text style={{ fontSize: 20 }}>📁</Text> }}
             />
             <Tab.Screen
                 name="Tasks"
                 component={TasksScreen}
-                options={{
-                    title: 'Mes tâches',
-                    tabBarIcon: () => <Text style={{ fontSize: 20 }}>✅</Text>
-                }}
+                options={{ title: 'Mes tâches', tabBarIcon: () => <Text style={{ fontSize: 20 }}>✅</Text> }}
             />
             <Tab.Screen
                 name="Notifications"
                 component={NotificationsScreen}
-                options={{
-                    title: 'Notifications',
-                    tabBarIcon: () => <Text style={{ fontSize: 20 }}>🔔</Text>
-                }}
+                options={{ title: 'Notifications', tabBarIcon: () => <Text style={{ fontSize: 20 }}>🔔</Text> }}
             />
             <Tab.Screen
                 name="Profile"
                 component={ProfileScreen}
-                options={{
-                    title: 'Profil',
-                    tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text>
-                }}
+                options={{ title: 'Profil', tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text> }}
             />
         </Tab.Navigator>
     );
@@ -93,16 +79,15 @@ export default function AppNavigator() {
 
     if (loading) return null;
 
-    // Pas connecté → Login
     if (!user) {
         return (
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Register" component={RegisterScreen} />
             </Stack.Navigator>
         );
     }
 
-    // Première connexion → Changer mot de passe obligatoire
     if (user.first_login === 1 || user.first_login === true) {
         return (
             <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -111,6 +96,5 @@ export default function AppNavigator() {
         );
     }
 
-    // Connecté normalement → App principale
     return <MainTabs />;
 }

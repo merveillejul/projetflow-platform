@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
 import API from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProjectsScreen({ navigation }) {
 
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
     useEffect(() => {
         API.get('/projects')
@@ -35,7 +37,13 @@ export default function ProjectsScreen({ navigation }) {
                 contentContainerStyle={{ padding: 16, gap: 12 }}
                 ListEmptyComponent={<Text style={styles.empty}>Aucun projet.</Text>}
                 renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.card}>
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate('ProjectDetail', {
+                            projectId: item.id,
+                            titre: item.titre
+                        })}
+                    >
                         <View style={styles.cardHeader}>
                             <Text style={styles.titre}>{item.titre}</Text>
                             <View style={[styles.badge, { backgroundColor: getStatutColor(item.statut) }]}>
@@ -44,6 +52,11 @@ export default function ProjectsScreen({ navigation }) {
                         </View>
                         <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
                         <Text style={styles.dates}>📅 {item.date_debut} → {item.date_fin}</Text>
+                        {item.members && item.members.length > 0 && (
+                            <Text style={styles.members}>
+                                👥 {item.members.length} membre(s)
+                            </Text>
+                        )}
                     </TouchableOpacity>
                 )}
             />
@@ -63,5 +76,6 @@ const styles = StyleSheet.create({
     badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
     badgeText: { color: 'white', fontSize: 11, fontWeight: '500' },
     desc: { fontSize: 14, color: '#64748b', marginBottom: 8 },
-    dates: { fontSize: 12, color: '#94a3b8' }
+    dates: { fontSize: 12, color: '#94a3b8' },
+    members: { fontSize: 12, color: '#94a3b8', marginTop: 4 }
 });

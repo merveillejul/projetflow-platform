@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
 
     const { login } = useAuth();
     const [email, setEmail] = useState('');
@@ -58,6 +58,15 @@ export default function LoginScreen() {
                     : <Text style={styles.buttonText}>Se connecter</Text>
                 }
             </TouchableOpacity>
+
+            <TouchableOpacity
+                onPress={() => navigation.navigate('Register')}
+                style={{ marginTop: 20 }}
+            >
+                <Text style={styles.registerLink}>
+                    Pas encore de compte ? S'inscrire
+                </Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -102,5 +111,10 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: '600'
+    },
+    registerLink: {
+        textAlign: 'center',
+        color: '#3b82f6',
+        fontSize: 14
     }
 });
