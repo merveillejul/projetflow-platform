@@ -10,6 +10,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DashboardController;
+use App\Models\Task;
 
 /*
 |--------------------------------------------------------------------------
@@ -86,4 +87,37 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/users/{user}/validate', [AuthController::class, 'validateAccount'])->middleware('role:admin');
     Route::put('/users/{user}/role',       [AuthController::class, 'updateRole'])->middleware('role:admin');
     Route::delete('/users/{user}',         [AuthController::class, 'deleteUser'])->middleware('role:admin');
+
+    Route::post('/auth/change-password', function (Request $request) {
+        $request->validate(['password' => 'required|min:8']);
+        $request->user()->update([
+            'password'    => bcrypt($request->password),
+            'first_login' => false,
+        ]);
+        return response()->json(['message' => 'Mot de passe mis à jour.']);
+    });
+
+    Route::get('/my-tasks', function(Request $request) {
+            return Task::where('assigne_a', $request->user()->id)
+                ->with('project')
+                ->get();
+        });
+
+        Route::post('/auth/change-password', function (Request $request) {
+        $request->validate([
+            'current_password' => 'required',
+            'password'         => 'required|min:8|confirmed',
+        ]);
+
+        if (!Hash::check($request->current_password, $request->user()->password)) {
+            return response()->json(['message' => 'Mot de passe actuel incorrect.'], 422);
+        }
+
+        $request->user()->update([
+            'password'    => Hash::make($request->password),
+            'first_login' => false,
+        ]);
+
+        return response()->json(['message' => 'Mot de passe mis à jour.']);
+    });
 });

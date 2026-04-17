@@ -5,10 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-
 class Task extends Model
 {
-     use HasFactory;
+    use HasFactory;
+
     protected $fillable = [
         'titre',
         'description',
@@ -24,9 +24,9 @@ class Task extends Model
         return $this->belongsTo(Project::class);
     }
 
-    public function user()
+    public function assignedUser()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'assigne_a');
     }
 
     public function comments()
@@ -37,10 +37,5 @@ class Task extends Model
     public function files()
     {
         return $this->hasMany(File::class);
-    }
-
-    public function assignedUser()
-    {
-        return $this->belongsTo(User::class,'assigned_to');
     }
 }

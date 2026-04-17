@@ -14,14 +14,26 @@ class TaskController extends Controller
    
     public function index(Request $request, $projectId)
     {
-        return Task::with('assignedUser')
-            ->where('project_id', $projectId)
-            ->whereHas('project', function($q) use ($request){
-                $q->where('user_id', $request->user()->id);
-            })
-            ->get();
-    }
+        $user = $request->user();
+        $project = \App\Models\Project::findOrFail($projectId);
 
+        // Chef voit toutes les tâches de son projet
+        if ($user->role === 'chef' && $project->user_id === $user->id) {
+            return Task::with('assignedUser')
+                ->where('project_id', $projectId)
+                ->get();
+        }
+
+        // Membre voit toutes les tâches du projet s'il en fait partie
+        $isMember = $project->members()->where('user_id', $user->id)->exists();
+        if ($isMember) {
+            return Task::with('assignedUser')
+                ->where('project_id', $projectId)
+                ->get();
+        }
+
+        return response()->json([]);
+    }
     /**
      * Store a newly created resource in storage.
      */

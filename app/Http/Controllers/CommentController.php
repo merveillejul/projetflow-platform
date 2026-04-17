@@ -21,17 +21,34 @@ class CommentController extends Controller
      */
     public function store(Request $request, Task $task)
     {
-        $validated = $request->validate([
-            'content' => 'required|string'
-        ]);
+        $request->validate(['content' => 'required|string']);
 
-        $comment = Comment::create([
+        $comment = \App\Models\Comment::create([
             'task_id' => $task->id,
-            'user_id' => auth()->id(),
-            'content' => $validated['content']
+            'user_id' => $request->user()->id,
+            'content' => $request->content,
         ]);
 
-        return $comment->load('user');
+        // Notifier le chef du projet
+        $project = $task->project;
+        if ($project->user_id !== $request->user()->id) {
+            \App\Models\Notification::create([
+                'user_id' => $project->user_id,
+                'message' => $request->user()->nom . ' a commenté la tâche : ' . $task->titre,
+                'type'    => 'comment_added',
+            ]);
+        }
+
+        // Notifier le membre assigné si différent du commentateur
+        if ($task->assigne_a && $task->assigne_a !== $request->user()->id) {
+            \App\Models\Notification::create([
+                'user_id' => $task->assigne_a,
+                'message' => $request->user()->nom . ' a commenté la tâche : ' . $task->titre,
+                'type'    => 'comment_added',
+            ]);
+        }
+
+        return response()->json($comment->load('user'), 201);
     }
 
 
