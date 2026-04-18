@@ -8,6 +8,8 @@ export default function Projects() {
 
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [filterStatut, setFilterStatut] = useState("tous");
     const { user } = useAuth();
     const navigate = useNavigate();
     const isChef = user?.role === "chef";
@@ -32,6 +34,14 @@ export default function Projects() {
         suspendu:   "#ef4444",
     }[statut] ?? "#6b7280");
 
+    // Filtrage
+    const filtered = projects.filter(p => {
+        const matchSearch = p.titre.toLowerCase().includes(search.toLowerCase()) ||
+            (p.description ?? "").toLowerCase().includes(search.toLowerCase());
+        const matchStatut = filterStatut === "tous" || p.statut === filterStatut;
+        return matchSearch && matchStatut;
+    });
+
     if (loading) return <div><Navbar /><p style={{ padding: "24px" }}>Chargement...</p></div>;
 
     return (
@@ -40,48 +50,83 @@ export default function Projects() {
 
             <div style={{ padding: "24px", maxWidth: "1000px", margin: "0 auto" }}>
 
+                {/* EN-TÊTE */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
                     <div>
                         <h1 style={{ margin: 0 }}>Mes Projets</h1>
                         <p style={{ color: "#64748b", margin: "4px 0 0", fontSize: "14px" }}>
-                            {user?.role === "membre"
-                                ? "Projets auxquels vous participez"
-                                : "Projets que vous gérez"
-                            }
+                            {user?.role === "membre" ? "Projets auxquels vous participez" : "Projets que vous gérez"}
                         </p>
                     </div>
-
-                    {/* Bouton visible seulement pour le chef */}
                     {isChef && (
                         <button
                             onClick={() => navigate("/create-project")}
-                            style={{
-                                background: "#3b82f6", color: "white",
-                                border: "none", padding: "10px 20px",
-                                borderRadius: "8px", cursor: "pointer", fontSize: "14px"
-                            }}
+                            style={{ background: "#3b82f6", color: "white", border: "none", padding: "10px 20px", borderRadius: "8px", cursor: "pointer", fontSize: "14px" }}
                         >
                             + Nouveau Projet
                         </button>
                     )}
                 </div>
 
-                {projects.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
-                        <div style={{ fontSize: "48px", marginBottom: "16px" }}>📁</div>
-                        <p>Aucun projet pour le moment.</p>
-                        {isChef && (
+                {/* BARRE DE RECHERCHE ET FILTRES */}
+                <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+                    <input
+                        type="text"
+                        placeholder="🔍 Rechercher un projet..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        style={{
+                            flex: 1, minWidth: "200px", padding: "10px 14px",
+                            borderRadius: "8px", border: "1px solid #e2e8f0",
+                            fontSize: "14px", background: "white", outline: "none"
+                        }}
+                    />
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        {[
+                            { value: "tous",       label: "Tous" },
+                            { value: "en_attente", label: "En attente" },
+                            { value: "en_cours",   label: "En cours" },
+                            { value: "termine",    label: "Terminé" },
+                            { value: "suspendu",   label: "Suspendu" },
+                        ].map(s => (
                             <button
-                                onClick={() => navigate("/create-project")}
-                                style={{ padding: "10px 20px", background: "#3b82f6", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}
+                                key={s.value}
+                                onClick={() => setFilterStatut(s.value)}
+                                style={{
+                                    padding: "8px 14px", borderRadius: "8px", cursor: "pointer",
+                                    fontSize: "13px", fontWeight: filterStatut === s.value ? "600" : "400",
+                                    border: filterStatut === s.value ? `2px solid ${getStatutColor(s.value) === "#6b7280" ? "#1e293b" : getStatutColor(s.value)}` : "1px solid #e2e8f0",
+                                    background: filterStatut === s.value ? (s.value === "tous" ? "#1e293b" : getStatutColor(s.value)) : "white",
+                                    color: filterStatut === s.value ? "white" : "#64748b",
+                                }}
                             >
-                                Créer mon premier projet
+                                {s.label}
                             </button>
-                        )}
+                        ))}
+                    </div>
+                </div>
+
+                {/* RÉSULTATS */}
+                <p style={{ color: "#64748b", fontSize: "13px", marginBottom: "16px" }}>
+                    {filtered.length} projet{filtered.length > 1 ? "s" : ""} trouvé{filtered.length > 1 ? "s" : ""}
+                    {search && ` pour "${search}"`}
+                    {filterStatut !== "tous" && ` — statut : ${filterStatut.replace("_", " ")}`}
+                </p>
+
+                {filtered.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
+                        <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔍</div>
+                        <p>Aucun projet ne correspond à votre recherche.</p>
+                        <button
+                            onClick={() => { setSearch(""); setFilterStatut("tous"); }}
+                            style={{ padding: "8px 16px", background: "transparent", border: "1px solid #e2e8f0", borderRadius: "8px", cursor: "pointer", color: "#64748b" }}
+                        >
+                            Réinitialiser les filtres
+                        </button>
                     </div>
                 ) : (
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
-                        {projects.map(project => (
+                        {filtered.map(project => (
                             <div key={project.id} style={{
                                 background: "white", border: "1px solid #e2e8f0",
                                 borderRadius: "12px", padding: "20px",
@@ -110,7 +155,6 @@ export default function Projects() {
                                     📅 {project.date_debut} → {project.date_fin}
                                 </p>
 
-                                {/* Technologies */}
                                 {project.technologies && project.technologies.length > 0 && (
                                     <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" }}>
                                         {project.technologies.map((tech, i) => (
@@ -121,7 +165,6 @@ export default function Projects() {
                                     </div>
                                 )}
 
-                                {/* Membres */}
                                 {project.members && project.members.length > 0 && (
                                     <div style={{ display: "flex", gap: "4px", marginBottom: "12px" }}>
                                         {project.members.slice(0, 4).map(m => (
@@ -147,7 +190,6 @@ export default function Projects() {
                                     </div>
                                 )}
 
-                                {/* Boutons chef seulement */}
                                 {isChef && (
                                     <div style={{ display: "flex", gap: "8px" }}>
                                         <button
@@ -165,7 +207,6 @@ export default function Projects() {
                                     </div>
                                 )}
 
-                                {/* Membre → juste voir le détail */}
                                 {user?.role === "membre" && (
                                     <Link
                                         to={`/projects/${project.id}`}

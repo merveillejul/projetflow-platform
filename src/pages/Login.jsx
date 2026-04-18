@@ -7,7 +7,7 @@ export default function Login() {
 
     const { login } = useAuth();
     const navigate = useNavigate();
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -17,7 +17,7 @@ export default function Login() {
         setError("");
         setLoading(true);
         try {
-            const res = await API.post("/login", { username, password });
+            const res = await API.post("/login", { email, password });
             login(res.data.user, res.data.token);
             navigate("/dashboard");
         } catch (err) {
@@ -43,13 +43,12 @@ export default function Login() {
                     <div>
                         <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", fontSize: "14px" }}>Nom d'utilisateur</label>
                         <input
-                            type="text"
-                            placeholder="votre_username"
-                            value={username}
-                            onChange={e => setUsername(e.target.value)}
+                            type="email"
+                            placeholder="votre@email.fr"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
                             required
-                            autoCapitalize="none"
-                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box", fontSize: "15px" }}
+                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }}
                         />
                     </div>
 
