@@ -40,8 +40,19 @@ class TaskController extends Controller
     {
         $request->validate([
             'titre'      => 'required',
-            'project_id' => 'required|exists:projects,id'
+            'project_id' => 'required|exists:projects,id',
         ]);
+
+        // Vérifier qu'une tâche avec le même titre n'existe pas déjà dans ce projet
+        $exists = Task::where('project_id', $request->project_id)
+            ->where('titre', $request->titre)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'Une tâche avec ce titre existe déjà dans ce projet.'
+            ], 422);
+        }
 
         $task = Task::create([
             'titre'         => $request->titre,
