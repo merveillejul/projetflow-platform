@@ -6,21 +6,21 @@ import { useAuth } from '../context/AuthContext';
 export default function LoginScreen({ navigation }) {
 
     const { login } = useAuth();
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
-        if (!username || !password) {
+        if (!email || !password) {
             Alert.alert('Erreur', 'Remplis tous les champs.');
             return;
         }
         setLoading(true);
         try {
-            const res = await API.post('/login', { username, password });
+            const res = await API.post('/login', { email, password });
             await login(res.data.user, res.data.token);
         } catch (err) {
-            Alert.alert('Erreur', 'Nom d\'utilisateur ou mot de passe incorrect.');
+            Alert.alert('Erreur', 'Email ou mot de passe incorrect.');
         } finally {
             setLoading(false);
         }
@@ -33,9 +33,10 @@ export default function LoginScreen({ navigation }) {
 
             <TextInput
                 style={styles.input}
-                placeholder="Nom d'utilisateur"
-                value={username}
-                onChangeText={setUsername}
+                placeholder="votre@email.fr"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
                 autoCapitalize="none"
             />
 
@@ -106,7 +107,8 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 14,
         fontSize: 16,
-        marginBottom: 16
+        marginBottom: 16,
+        color: '#1e293b'
     },
     button: {
         backgroundColor: '#1e293b',
