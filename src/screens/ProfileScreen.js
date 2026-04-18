@@ -11,15 +11,16 @@ export default function ProfileScreen() {
     const [pwLoading, setPwLoading] = useState(false);
     const [photoLoading, setPhotoLoading] = useState(false);
 
-    const handleLogout = async () => {
+    const handleLogout = () => {
         Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
             { text: 'Annuler', style: 'cancel' },
             {
                 text: 'Déconnexion',
                 style: 'destructive',
-                onPress: async () => {
-                    try { await API.post('/logout'); } catch (e) {}
-                    await logout();
+                onPress: () => {
+                    API.post('/logout').catch(() => {}).finally(() => {
+                        logout();
+                    });
                 }
             }
         ]);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ChangePasswordScreen() {
 
@@ -15,8 +16,8 @@ export default function ChangePasswordScreen() {
             Alert.alert('Erreur', 'Remplis tous les champs.');
             return;
         }
-        if (password.length < 8) {
-            Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 8 caractères.');
+        if (password.length < 12) {
+            Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 12 caractères.');
             return;
         }
         if (password !== confirm) {
@@ -26,19 +27,17 @@ export default function ChangePasswordScreen() {
 
         setLoading(true);
         try {
-            await API.post('/auth/change-password', { password });
-
-            // Met à jour l'utilisateur avec first_login = 0
-            const token = await import('@react-native-async-storage/async-storage')
-                .then(m => m.default.getItem('token'));
-
+            // Première connexion — pas besoin de l'ancien mot de passe
+            await API.post('/auth/first-login-password', { password });
+            
+            // Mettre à jour first_login à 0
+            const token = await AsyncStorage.getItem('token');
             const updatedUser = { ...user, first_login: 0 };
             await login(updatedUser, token);
-
-            Alert.alert('Succès', 'Mot de passe mis à jour !');
+            
+            Alert.alert('Succès', 'Mot de passe défini !');
         } catch (err) {
-            Alert.alert('Erreur', 'Impossible de changer le mot de passe.');
-            console.log(err.response?.data);
+            Alert.alert('Erreur', err.response?.data?.message ?? 'Erreur.');
         } finally {
             setLoading(false);
         }
@@ -49,17 +48,16 @@ export default function ChangePasswordScreen() {
             <View style={styles.container}>
                 <Text style={styles.title}>Première connexion</Text>
                 <Text style={styles.subtitle}>
-                    Vous devez définir un nouveau mot de passe avant de continuer.
+                    Définissez votre mot de passe personnel pour continuer.
                 </Text>
 
                 <TextInput
                     style={styles.input}
-                    placeholder="Nouveau mot de passe"
+                    placeholder="Nouveau mot de passe (12 min.)"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
                 />
-
                 <TextInput
                     style={styles.input}
                     placeholder="Confirmer le mot de passe"
@@ -68,11 +66,7 @@ export default function ChangePasswordScreen() {
                     secureTextEntry
                 />
 
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleSubmit}
-                    disabled={loading}
-                >
+                <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
                     {loading
                         ? <ActivityIndicator color="white" />
                         : <Text style={styles.buttonText}>Valider</Text>
@@ -92,9 +86,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'white', borderWidth: 1, borderColor: '#e2e8f0',
         borderRadius: 10, padding: 14, fontSize: 16, marginBottom: 16
     },
-    button: {
-        backgroundColor: '#1e293b', padding: 16,
-        borderRadius: 10, alignItems: 'center', marginTop: 8
-    },
+    button: { backgroundColor: '#1e293b', padding: 16, borderRadius: 10, alignItems: 'center' },
     buttonText: { color: 'white', fontSize: 16, fontWeight: '600' }
 });
