@@ -1,50 +1,76 @@
-# Welcome to your Expo app 👋
+# ProjectFlow — Application Mobile React Native
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application mobile Android de ProjectFlow. Développée avec React Native (Expo), consomme la même API REST Laravel que l'application web.
 
-## Get started
+## Stack technique
 
-1. Install dependencies
+- React Native (Expo SDK)
+- JavaScript ES6+
+- React Navigation v6 (Tab + Stack Navigator)
+- Axios + AsyncStorage (authentification JWT)
+- react-native-svg (icônes et graphiques)
 
-   ```bash
-   npm install
-   ```
+## Prérequis
 
-2. Start the app
+- Node.js 18+ (requis pour Metro bundler et npm — ce n'est PAS un backend)
+- Expo CLI : `npm install -g expo-cli`
+- API Laravel démarrée et accessible sur le réseau local
+- Expo Go installé sur ton smartphone Android OU Android Studio pour l'émulateur
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Installation
 
 ```bash
-npm run reset-project
+cd projectflow-mobile
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Puis :
+- Scanner le QR code avec Expo Go (smartphone Android)
+- Appuyer sur `a` dans le terminal pour ouvrir sur l'émulateur Android Studio
 
-## Learn more
+## Configuration
 
-To learn more about developing your project with Expo, look at the following resources:
+L'URL de l'API est configurée dans `services/api.js` :
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```javascript
+baseURL: 'http://192.168.X.X:8000/api'  // Remplacer par ton IP locale
+```
 
-## Join the community
+Pour trouver ton IP : `ipconfig` dans PowerShell → IPv4 de ta carte réseau.
 
-Join our community of developers creating universal apps.
+## Comptes de démonstration
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Rôle | Email | Mot de passe |
+|------|-------|--------------|
+| Chef de projet | chef.projectflow@demo.fr | Chef@PF2026! |
+| Membre | membre.projectflow@demo.fr | Membre@PF2026! |
+
+## Écrans disponibles
+
+| Écran | Description |
+|-------|-------------|
+| LoginScreen | Connexion |
+| RegisterScreen | Inscription |
+| ChangePasswordScreen | 1ère connexion — mot de passe forcé |
+| DashboardScreen | Tableau de bord avec statistiques |
+| ProjectsScreen | Liste des projets avec filtres |
+| ProjectDetailScreen | Détail projet, tâches, équipe, commentaires |
+| TasksScreen | Mes tâches avec mise à jour de statut |
+| NotificationsScreen | Notifications avec badge |
+| ProfileScreen | Profil et déconnexion |
+
+## Générer l'APK Android
+
+```bash
+npm install -g eas-cli
+eas build -p android
+```
+
+## Note sur Node.js
+
+Node.js est utilisé exclusivement comme moteur d'exécution pour le Metro bundler d'Expo et les outils npm. Il ne constitue pas un backend supplémentaire — le backend unique du projet est l'API REST Laravel.
+
+## Auteur
+
+Merveille Juliana — BTS SIO SLAM 2026 — N° 2545871902
