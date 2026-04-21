@@ -25,9 +25,14 @@ export default function Navbar() {
     }, []);
 
     const handleLogout = async () => {
-        await API.post("/logout");
-        logout();
-        navigate("/");
+        try {
+            await API.post("/logout");
+        } catch (err) {
+            // token déjà expiré ou erreur serveur — on déconnecte quand même
+        } finally {
+            logout();
+            navigate("/");
+        }
     };
 
     return (

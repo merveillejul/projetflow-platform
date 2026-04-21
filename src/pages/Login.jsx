@@ -3,8 +3,37 @@ import { useNavigate, Link } from "react-router-dom";
 import API from "../api/api";
 import { useAuth } from "../context/AuthContext";
 
-export default function Login() {
+const loginStyles = `
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .pf-input {
+        width: 100%; padding: 9px 12px; border-radius: 8px;
+        border: 1px solid #e5e7eb; box-sizing: border-box;
+        font-size: 13.5px; outline: none; color: #111827;
+        background: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .pf-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+    .pf-input::placeholder { color: #d1d5db; }
+    .pf-submit-btn {
+        width: 100%; padding: 10px;
+        background: #1d4ed8; color: white;
+        border: none; border-radius: 8px; cursor: pointer;
+        font-size: 14px; font-weight: 500; margin-top: 4px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        transition: background 0.15s ease, transform 0.1s ease;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .pf-submit-btn:hover:not(:disabled) { background: #1e40af; }
+    .pf-submit-btn:active:not(:disabled) { transform: scale(0.99); }
+    .pf-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .pf-forgot:hover { color: #111827; }
+`;
 
+export default function Login() {
     const { login } = useAuth();
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
@@ -21,68 +50,130 @@ export default function Login() {
             login(res.data.user, res.data.token);
             navigate("/dashboard");
         } catch (err) {
-            const msg = err.response?.data?.message ?? "Identifiants incorrects.";
-            setError(msg);
+            setError(err.response?.data?.message ?? "Identifiants incorrects.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ minHeight: "100vh", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ maxWidth: "420px", width: "100%", padding: "40px 24px" }}>
+        <>
+            <style>{loginStyles}</style>
+            <div style={{
+                minHeight: "100vh",
+                background: "#f8fafc",
+                backgroundImage: "radial-gradient(#e2e8f0 1px, transparent 1px)",
+                backgroundSize: "24px 24px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            }}>
+                <div style={{ width: "100%", maxWidth: "380px", padding: "0 24px" }}>
 
-                <div style={{ textAlign: "center", marginBottom: "32px" }}>
-                    <h1 style={{ color: "#7c3aed", margin: "0 0 8px" }}>ProjectFlow</h1>
-                    <p style={{ color: "#64748b", margin: 0 }}>Connexion à votre espace</p>
-                </div>
-
-                {error && <p style={{ color: "#ef4444", background: "#fef2f2", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>{error}</p>}
-
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <div>
-                        <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", fontSize: "14px" }}>Nom d'utilisateur</label>
-                        <input
-                            type="email"
-                            placeholder="votre@email.fr"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            required
-                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }}
-                        />
-                    </div>
-
-                    <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                            <label style={{ fontWeight: "500", fontSize: "14px" }}>Mot de passe</label>
-                            <Link to="/forgot-password" style={{ fontSize: "13px", color: "#7c3aed", textDecoration: "none" }}>
-                                Mot de passe oublié ?
-                            </Link>
+                    {/* LOGO */}
+                    <div style={{ textAlign: "center", marginBottom: "28px" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", marginBottom: "16px" }}>
+                            <div style={{
+                                width: "30px", height: "30px", borderRadius: "8px",
+                                background: "#1d4ed8",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>
+                                <svg width="14" height="14" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                                </svg>
+                            </div>
+                            <span style={{ fontSize: "16px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.3px" }}>
+                                ProjectFlow
+                            </span>
                         </div>
-                        <input
-                            type="password"
-                            placeholder="Votre mot de passe"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            required
-                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box", fontSize: "15px" }}
-                        />
+                        <p style={{ margin: "0 0 3px", fontSize: "15px", fontWeight: "600", color: "#0f172a" }}>
+                            Connexion
+                        </p>
+                        <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+                            Connectez-vous à votre espace de travail
+                        </p>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={{ padding: "12px", background: "#1e293b", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "15px", fontWeight: "500" }}
-                    >
-                        {loading ? "Connexion..." : "Se connecter"}
-                    </button>
+                    {/* ERREUR */}
+                    {error && (
+                        <div style={{
+                            display: "flex", alignItems: "flex-start", gap: "8px",
+                            background: "#fef2f2", border: "1px solid #fecaca",
+                            borderRadius: "8px", padding: "10px 12px", marginBottom: "14px",
+                        }}>
+                            <svg width="15" height="15" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: "1px" }}>
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <span style={{ color: "#b91c1c", fontSize: "13px", lineHeight: 1.4 }}>{error}</span>
+                        </div>
+                    )}
 
-                    <p style={{ textAlign: "center", fontSize: "14px", color: "#64748b" }}>
+                    {/* CARTE */}
+                    <div style={{
+                        background: "white",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "12px",
+                        padding: "24px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                    }}>
+                        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            <div>
+                                <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", fontSize: "13px", color: "#374151" }}>
+                                    Adresse email
+                                </label>
+                                <input
+                                    className="pf-input"
+                                    type="email"
+                                    placeholder="votre@email.fr"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                    <label style={{ fontWeight: "500", fontSize: "13px", color: "#374151" }}>
+                                        Mot de passe
+                                    </label>
+                                    <Link to="/forgot-password" className="pf-forgot" style={{ fontSize: "12px", color: "#6b7280", textDecoration: "none", transition: "color 0.15s" }}>
+                                        Mot de passe oublié ?
+                                    </Link>
+                                </div>
+                                <input
+                                    className="pf-input"
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <button type="submit" disabled={loading} className="pf-submit-btn">
+                                {loading ? (
+                                    <>
+                                        <div style={{
+                                            width: "14px", height: "14px",
+                                            border: "2px solid rgba(255,255,255,0.4)",
+                                            borderTopColor: "white",
+                                            borderRadius: "50%",
+                                            animation: "spin 0.7s linear infinite",
+                                        }} />
+                                        Connexion en cours...
+                                    </>
+                                ) : "Se connecter"}
+                            </button>
+                        </form>
+                    </div>
+
+                    <p style={{ textAlign: "center", fontSize: "13px", color: "#6b7280", marginTop: "20px" }}>
                         Pas encore de compte ?{" "}
-                        <Link to="/register" style={{ color: "#7c3aed", textDecoration: "none" }}>S'inscrire</Link>
+                        <Link to="/register" style={{ color: "#1d4ed8", textDecoration: "none", fontWeight: "500" }}>
+                            Créer un compte
+                        </Link>
                     </p>
-                </form>
+                </div>
             </div>
-        </div>
+        </>
     );
 }
