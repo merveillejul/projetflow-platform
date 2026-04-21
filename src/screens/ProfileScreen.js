@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
     infoLabel: { fontSize: 14, color: '#64748b' },
     infoValue: { fontSize: 14, color: '#1e293b', fontWeight: '500' },
-    pwInput: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 12, fontSize: 14, marginBottom: 10, width: '100%' },
+    pwInput: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 12, fontSize: 14, marginBottom: 10, width: '100%', color: '#1e293b' },
     pwBtn: { backgroundColor: '#1e293b', padding: 14, borderRadius: 8, alignItems: 'center', marginTop: 4 },
     pwBtnText: { color: 'white', fontWeight: '600', fontSize: 14 },
     logoutBtn: { width: '100%', padding: 16, borderWidth: 1, borderColor: '#ef4444', borderRadius: 10, alignItems: 'center', marginBottom: 24 },
