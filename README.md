@@ -1,16 +1,71 @@
-# React + Vite
+# ProjectFlow — Application Web React JS
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface web de l'application ProjectFlow. SPA (Single Page Application) consommant l'API REST Laravel.
 
-Currently, two official plugins are available:
+## Stack technique
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React JS 18 (Vite)
+- JavaScript ES6+
+- Axios (appels HTTP)
+- React Router v6
+- Recharts (graphiques)
+- Police Inter (Google Fonts)
 
-## React Compiler
+## Prérequis
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 18+
+- API Laravel démarrée sur `http://localhost:8000`
 
-## Expanding the ESLint configuration
+## Installation
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+cd projectflow-web
+npm install
+npm run dev
+```
+
+L'application est accessible sur `http://localhost:5173`
+
+## Configuration
+
+L'URL de l'API est configurée dans `src/api/api.js` :
+
+```javascript
+baseURL: 'http://localhost:8000/api'
+```
+
+Si tu utilises une IP réseau différente, modifie cette ligne.
+
+## Comptes de démonstration
+
+| Rôle | Email | Mot de passe |
+|------|-------|--------------|
+| Administrateur | admin.projectflow@demo.fr | Admin@PF2026! |
+| Chef de projet | chef.projectflow@demo.fr | Chef@PF2026! |
+| Membre | membre.projectflow@demo.fr | Membre@PF2026! |
+
+## Structure des pages
+
+| Route | Page | Accès |
+|-------|------|-------|
+| / | Connexion | Tous |
+| /register | Inscription | Tous |
+| /admin | Interface Admin | Admin |
+| /dashboard | Tableau de bord | Chef + Membre |
+| /projects | Liste des projets | Chef + Membre |
+| /projects/:id | Détail projet | Chef + Membre |
+| /tasks | Mes tâches | Chef + Membre |
+| /notifications | Notifications | Chef + Membre |
+| /profile | Profil | Tous (connectés) |
+
+## Lancer en production
+
+```bash
+npm run build
+```
+
+Les fichiers compilés sont dans le dossier `dist/`.
+
+## Auteur
+
+Merveille Juliana — BTS SIO SLAM 2026 — N° 2545871902
