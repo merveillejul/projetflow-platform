@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet,
-    Alert, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView,
+    SafeAreaView, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
-
+ 
 const COLORS = {
     bg:        '#f8fafc',
     white:     '#ffffff',
@@ -20,35 +20,64 @@ const COLORS = {
     redBg:     '#fef2f2',
     redBorder: '#fecaca',
 };
-
+ 
+function EyeIcon({ visible }) {
+    if (visible) {
+        return (
+            <Text style={{ fontSize: 15, color: COLORS.textLight }}>🙈</Text>
+        );
+    }
+    return (
+        <Text style={{ fontSize: 15, color: COLORS.textLight }}>👁️</Text>
+    );
+}
+ 
 function InputField({ label, value, onChangeText, placeholder, secureTextEntry, keyboardType, autoCapitalize }) {
     const [focused, setFocused] = useState(false);
+    const [passwordVisible, setPasswordVisible] = useState(false);
+ 
     return (
         <View style={{ marginBottom: 14 }}>
             <Text style={styles.label}>{label}</Text>
-            <TextInput
-                style={[styles.input, focused && styles.inputFocused]}
-                placeholder={placeholder}
-                placeholderTextColor={COLORS.textLight}
-                value={value}
-                onChangeText={onChangeText}
-                secureTextEntry={secureTextEntry}
-                keyboardType={keyboardType}
-                autoCapitalize={autoCapitalize ?? 'none'}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-            />
+            <View style={{ position: 'relative' }}>
+                <TextInput
+                    style={[
+                        styles.input,
+                        focused && styles.inputFocused,
+                        secureTextEntry && { paddingRight: 44 },
+                    ]}
+                    placeholder={placeholder}
+                    placeholderTextColor={COLORS.textLight}
+                    value={value}
+                    onChangeText={onChangeText}
+                    secureTextEntry={secureTextEntry && !passwordVisible}
+                    keyboardType={keyboardType}
+                    autoCapitalize={autoCapitalize ?? 'none'}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                />
+                {secureTextEntry && (
+                    <TouchableOpacity
+                        onPress={() => setPasswordVisible(!passwordVisible)}
+                        style={styles.eyeBtn}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        activeOpacity={0.7}
+                    >
+                        <EyeIcon visible={passwordVisible} />
+                    </TouchableOpacity>
+                )}
+            </View>
         </View>
     );
 }
-
+ 
 export default function LoginScreen({ navigation }) {
     const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
+ 
     const handleLogin = async () => {
         setError('');
         if (!email || !password) { setError('Veuillez remplir tous les champs.'); return; }
@@ -62,7 +91,7 @@ export default function LoginScreen({ navigation }) {
             setLoading(false);
         }
     };
-
+ 
     return (
         <SafeAreaView style={styles.safe}>
             <KeyboardAvoidingView
@@ -82,7 +111,7 @@ export default function LoginScreen({ navigation }) {
                         <Text style={styles.logoText}>ProjectFlow</Text>
                         <Text style={styles.logoSub}>Connexion à votre espace de travail</Text>
                     </View>
-
+ 
                     {/* CARD */}
                     <View style={styles.card}>
                         {error !== '' && (
@@ -91,7 +120,7 @@ export default function LoginScreen({ navigation }) {
                                 <Text style={styles.errorText}>{error}</Text>
                             </View>
                         )}
-
+ 
                         <InputField
                             label="Adresse email"
                             value={email}
@@ -106,7 +135,7 @@ export default function LoginScreen({ navigation }) {
                             placeholder="••••••••"
                             secureTextEntry
                         />
-
+ 
                         <TouchableOpacity
                             onPress={() => navigation.navigate('ForgotPassword')}
                             style={{ alignSelf: 'flex-end', marginTop: -6, marginBottom: 20 }}
@@ -114,7 +143,7 @@ export default function LoginScreen({ navigation }) {
                         >
                             <Text style={styles.forgotLink}>Mot de passe oublié ?</Text>
                         </TouchableOpacity>
-
+ 
                         <TouchableOpacity
                             style={[styles.btn, loading && { opacity: 0.7 }]}
                             onPress={handleLogin}
@@ -131,7 +160,7 @@ export default function LoginScreen({ navigation }) {
                             )}
                         </TouchableOpacity>
                     </View>
-
+ 
                     {/* INSCRIPTION */}
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Register')}
@@ -146,11 +175,11 @@ export default function LoginScreen({ navigation }) {
         </SafeAreaView>
     );
 }
-
+ 
 const styles = StyleSheet.create({
     safe: { flex: 1, backgroundColor: COLORS.bg },
     scroll: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingBottom: 40 },
-
+ 
     logoBlock: { alignItems: 'center', marginBottom: 32 },
     logoIcon: {
         width: 52, height: 52, borderRadius: 14,
@@ -163,13 +192,13 @@ const styles = StyleSheet.create({
         letterSpacing: -0.5, marginBottom: 6,
     },
     logoSub: { fontSize: 13.5, color: COLORS.textMuted, textAlign: 'center' },
-
+ 
     card: {
         backgroundColor: COLORS.white, borderRadius: 16,
         padding: 22, borderWidth: 1, borderColor: COLORS.border,
         marginBottom: 20,
     },
-
+ 
     errorBox: {
         flexDirection: 'row', alignItems: 'flex-start', gap: 8,
         backgroundColor: COLORS.redBg, borderWidth: 1, borderColor: COLORS.redBorder,
@@ -177,7 +206,7 @@ const styles = StyleSheet.create({
     },
     errorDot: { fontSize: 10, color: COLORS.red, marginTop: 3 },
     errorText: { flex: 1, fontSize: 13, color: '#b91c1c', lineHeight: 18 },
-
+ 
     label: { fontSize: 12.5, fontWeight: '600', color: '#475569', marginBottom: 6 },
     input: {
         backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
@@ -191,9 +220,17 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
-
+ 
+    eyeBtn: {
+        position: 'absolute',
+        right: 12,
+        top: '50%',
+        marginTop: -12,
+        padding: 4,
+    },
+ 
     forgotLink: { fontSize: 12.5, color: COLORS.textMuted, fontWeight: '500' },
-
+ 
     btn: {
         backgroundColor: COLORS.blue, borderRadius: 10,
         paddingVertical: 14, alignItems: 'center',
@@ -205,7 +242,7 @@ const styles = StyleSheet.create({
         borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
         borderTopColor: 'white',
     },
-
+ 
     registerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
     registerText: { fontSize: 13.5, color: COLORS.textMuted },
     registerLink: { fontSize: 13.5, color: COLORS.blue, fontWeight: '600' },
