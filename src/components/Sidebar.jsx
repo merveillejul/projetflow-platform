@@ -89,65 +89,44 @@ const getRoleConfig = (role) => ROLE_CONFIG[role] ?? { color: "#6b7280", bg: "#f
 
 const sidebarStyles = `
     .pf-nav-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 7px 10px;
-        border-radius: 7px;
-        margin-bottom: 1px;
-        text-decoration: none;
-        font-size: 13.5px;
-        font-weight: 400;
-        color: #4b5563;
-        background: transparent;
+        display: flex; align-items: center; gap: 10px;
+        padding: 7px 10px; border-radius: 7px; margin-bottom: 1px;
+        text-decoration: none; font-size: 13.5px; font-weight: 400;
+        color: #4b5563; background: transparent;
         transition: background 0.15s ease, color 0.15s ease;
-        position: relative;
-        border-left: 2px solid transparent;
+        position: relative; border-left: 2px solid transparent;
     }
     .pf-nav-item:hover { background: #f9fafb; color: #111827; }
     .pf-nav-item.active {
-        background: #f0f4ff;
-        color: #1d4ed8;
-        border-left: 2px solid #3b82f6;
-        font-weight: 500;
+        background: #f0f4ff; color: #1d4ed8;
+        border-left: 2px solid #3b82f6; font-weight: 500;
     }
     .pf-logout-btn {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 7px 10px;
-        border-radius: 7px;
-        border: none;
-        background: transparent;
-        cursor: pointer;
-        font-size: 13.5px;
-        color: #9ca3af;
-        font-family: 'Inter', -apple-system, sans-serif;
+        width: 100%; display: flex; align-items: center; gap: 10px;
+        padding: 7px 10px; border-radius: 7px; border: none;
+        background: transparent; cursor: pointer; font-size: 13.5px;
+        color: #9ca3af; font-family: 'Inter', -apple-system, sans-serif;
         transition: background 0.15s ease, color 0.15s ease;
-        border-left: 2px solid transparent;
-        text-align: left;
+        border-left: 2px solid transparent; text-align: left;
     }
     .pf-logout-btn:hover { background: #fef2f2; color: #ef4444; }
     .pf-profile-link {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 10px;
-        border-radius: 7px;
-        margin-bottom: 2px;
-        background: transparent;
-        cursor: pointer;
-        text-decoration: none;
-        transition: background 0.15s ease;
-        border-left: 2px solid transparent;
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 10px; border-radius: 7px; margin-bottom: 2px;
+        background: transparent; cursor: pointer; text-decoration: none;
+        transition: background 0.15s ease; border-left: 2px solid transparent;
     }
     .pf-profile-link:hover { background: #f9fafb; }
     .pf-profile-link.active { background: #f0f4ff; border-left: 2px solid #3b82f6; }
     @keyframes pf-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    .pf-sidebar { transform: translateX(0); }
+    @media (max-width: 768px) {
+        .pf-sidebar { transform: translateX(-100%); }
+        .pf-sidebar.open { transform: translateX(0); box-shadow: 4px 0 20px rgba(0,0,0,0.15); }
+    }
 `;
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -174,27 +153,33 @@ export default function Sidebar() {
     };
 
     const isActive = (to) => location.pathname === to || location.pathname.startsWith(to + "/");
-
     const currentTab = new URLSearchParams(location.search).get("tab") ?? "dashboard";
     const isAdminTabActive = (tab) => location.pathname === "/admin" && currentTab === tab;
-
     const roleConfig = getRoleConfig(user?.role);
+
+    // Ferme la sidebar au changement de page sur mobile
+    useEffect(() => {
+        if (onClose) onClose();
+    }, [location.pathname, location.search]);
 
     return (
         <>
             <style>{sidebarStyles}</style>
-            <aside style={{
-                width: "232px",
-                minHeight: "100vh",
-                background: "#ffffff",
-                borderRight: "1px solid #e5e7eb",
-                display: "flex",
-                flexDirection: "column",
-                position: "fixed",
-                top: 0, left: 0, zIndex: 100,
-                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-            }}>
-
+            <aside
+                className={isOpen ? "pf-sidebar open" : "pf-sidebar"}
+                style={{
+                    width: "232px",
+                    minHeight: "100vh",
+                    background: "#ffffff",
+                    borderRight: "1px solid #e5e7eb",
+                    display: "flex",
+                    flexDirection: "column",
+                    position: "fixed",
+                    top: 0, left: 0, zIndex: 100,
+                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    transition: "transform 0.25s ease",
+                }}
+            >
                 {/* LOGO */}
                 <div style={{ padding: "18px 16px 14px" }}>
                     <Link to={isAdmin ? "/admin" : "/dashboard"} style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "9px" }}>
@@ -217,33 +202,24 @@ export default function Sidebar() {
 
                 {/* NAVIGATION */}
                 <nav style={{ flex: 1, padding: "0 10px", overflowY: "auto" }}>
-
-                    {/* Nav utilisateur (chef / membre) */}
                     {!isAdmin && (
                         <>
                             <p style={{
                                 fontSize: "10.5px", fontWeight: "600", color: "#9ca3af",
                                 textTransform: "uppercase", letterSpacing: "0.09em",
                                 padding: "0 10px", margin: "0 0 6px",
-                            }}>
-                                Menu
-                            </p>
+                            }}>Menu</p>
                             {NAV_ITEMS.map(item => {
                                 const active = isActive(item.to);
                                 return (
-                                    <Link
-                                        key={item.to}
-                                        to={item.to}
-                                        className={`pf-nav-item${active ? " active" : ""}`}
-                                    >
+                                    <Link key={item.to} to={item.to} className={`pf-nav-item${active ? " active" : ""}`}>
                                         <span style={{ color: active ? "#3b82f6" : "#9ca3af", flexShrink: 0, transition: "color 0.15s", display: "flex" }}>
                                             {item.icon}
                                         </span>
                                         {item.label}
                                         {item.badge && count > 0 && (
                                             <span style={{
-                                                marginLeft: "auto",
-                                                background: "#ef4444", color: "white",
+                                                marginLeft: "auto", background: "#ef4444", color: "white",
                                                 borderRadius: "20px", fontSize: "10.5px", fontWeight: "600",
                                                 padding: "1px 6px", minWidth: "17px", textAlign: "center",
                                                 animation: "pf-pulse 2s ease-in-out infinite",
@@ -257,24 +233,17 @@ export default function Sidebar() {
                         </>
                     )}
 
-                    {/* Nav admin */}
                     {isAdmin && (
                         <>
                             <p style={{
                                 fontSize: "10.5px", fontWeight: "600", color: "#9ca3af",
                                 textTransform: "uppercase", letterSpacing: "0.09em",
                                 padding: "0 10px", margin: "0 0 6px",
-                            }}>
-                                Admin
-                            </p>
+                            }}>Admin</p>
                             {ADMIN_NAV_ITEMS.map(item => {
                                 const active = isAdminTabActive(item.tab);
                                 return (
-                                    <Link
-                                        key={item.tab}
-                                        to={item.to}
-                                        className={`pf-nav-item${active ? " active" : ""}`}
-                                    >
+                                    <Link key={item.tab} to={item.to} className={`pf-nav-item${active ? " active" : ""}`}>
                                         <span style={{ color: active ? "#3b82f6" : "#9ca3af", flexShrink: 0, transition: "color 0.15s", display: "flex" }}>
                                             {item.icon}
                                         </span>
