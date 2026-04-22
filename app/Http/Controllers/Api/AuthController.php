@@ -84,8 +84,9 @@ class AuthController extends Controller
         $request->validate([
             'nom'   => 'sometimes|string',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'photo' => 'sometimes|nullable|string',
         ]);
-        $user->update($request->only(['nom', 'email']));
+        $user->update($request->only(['nom', 'email', 'photo']));
         return response()->json($user);
     }
 
