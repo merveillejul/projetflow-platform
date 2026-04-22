@@ -115,12 +115,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/photo', function (Request $request) {
         $request->validate(['photo' => 'required|image|max:2048']);
         $user = $request->user();
-        if ($user->photo && \Storage::disk('public')->exists(str_replace(url('storage/'), '', $user->photo))) {
-            \Storage::disk('public')->delete(str_replace(url('storage/'), '', $user->photo));
+
+        // Supprimer l'ancienne photo si elle existe
+        if ($user->photo) {
+            $oldPath = str_replace(url('/storage/'), '', $user->photo);
+            if (\Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
         }
+
         $path = $request->file('photo')->store('photos', 'public');
-        $fullUrl = 'http://192.168.1.179:8000/storage/' . $path;
+        $fullUrl = url('/storage/' . $path);
         $user->update(['photo' => $fullUrl]);
+
         return response()->json(['message' => 'Photo mise à jour.', 'photo' => $fullUrl]);
     });
 
