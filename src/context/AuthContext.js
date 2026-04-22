@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DeviceEventEmitter } from 'react-native';
 
 const AuthContext = createContext();
 
@@ -11,6 +12,15 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         loadStoredAuth();
+    }, []);
+
+    // Écoute la déconnexion automatique si token expiré (erreur 401)
+    useEffect(() => {
+        const sub = DeviceEventEmitter.addListener('unauthorized', () => {
+            setUser(null);
+            setToken(null);
+        });
+        return () => sub.remove();
     }, []);
 
     const loadStoredAuth = async () => {
