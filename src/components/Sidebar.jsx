@@ -105,7 +105,7 @@ const sidebarStyles = `
         width: 100%; display: flex; align-items: center; gap: 10px;
         padding: 7px 10px; border-radius: 7px; border: none;
         background: transparent; cursor: pointer; font-size: 13.5px;
-        color: #9ca3af; font-family: 'Inter', -apple-system, sans-serif;
+        color: #9ca3af; font-family: 'Inter', 'Inter', sans-serif;
         transition: background 0.15s ease, color 0.15s ease;
         border-left: 2px solid transparent; text-align: left;
     }
@@ -176,7 +176,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     flexDirection: "column",
                     position: "fixed",
                     top: 0, left: 0, zIndex: 100,
-                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    fontFamily: "'Inter', 'Inter', sans-serif",
                     transition: "transform 0.25s ease",
                 }}
             >

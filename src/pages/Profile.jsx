@@ -141,7 +141,7 @@ export default function Profile() {
         API.get("/user").then(res => {
             setForm({ nom: res.data.nom || "", email: res.data.email || "" });
             if (res.data.photo) {
-                setPhotoUrl(res.data.photo.startsWith("http") ? res.data.photo : `http://192.168.1.179:8000/storage/${res.data.photo}`);
+                setPhotoUrl(res.data.photo.startsWith("http") ? res.data.photo : `https://projetflow-platform-production.up.railway.app/storage/${res.data.photo}`);
             }
         });
     }, []);

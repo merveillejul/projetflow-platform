@@ -40,7 +40,7 @@ const CustomTooltip = ({ active, payload }) => {
         <div style={{
             background: "white", border: "1px solid #e5e7eb", borderRadius: "8px",
             padding: "8px 12px", fontSize: "13px",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
         }}>
             <span style={{ color: COLOR_MAP[name], fontWeight: 600, marginRight: 6 }}>●</span>
@@ -219,7 +219,7 @@ export default function Dashboard() {
                                 y="44%"
                                 textAnchor="middle"
                                 dominantBaseline="middle"
-                                style={{ fontSize: "26px", fontWeight: "700", fill: "#0f172a", fontFamily: "-apple-system, sans-serif" }}
+                                style={{ fontSize: "26px", fontWeight: "700", fill: "#0f172a", fontFamily: "'Inter', sans-serif" }}
                             >
                                 {totalTaches}
                             </text>
@@ -228,7 +228,7 @@ export default function Dashboard() {
                                 y="54%"
                                 textAnchor="middle"
                                 dominantBaseline="middle"
-                                style={{ fontSize: "12px", fill: "#9ca3af", fontFamily: "-apple-system, sans-serif" }}
+                                style={{ fontSize: "12px", fill: "#9ca3af", fontFamily: "'Inter', sans-serif" }}
                             >
                                 tâches
                             </text>

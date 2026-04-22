@@ -58,7 +58,7 @@ export default function ResetPassword() {
         backgroundImage: "radial-gradient(#e2e8f0 1px, transparent 1px)",
         backgroundSize: "24px 24px",
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "Inter, -apple-system, sans-serif",
+        fontFamily: "Inter, 'Inter', sans-serif",
     };
 
     if (!email || !token) return (

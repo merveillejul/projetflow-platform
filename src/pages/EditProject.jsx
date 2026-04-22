@@ -9,7 +9,7 @@ const formStyles = `
         width: 100%; padding: 9px 13px; border-radius: 8px;
         border: 1px solid #e2e8f0; box-sizing: border-box;
         font-size: 13.5px; color: #1e293b; background: white; outline: none;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', sans-serif;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .pf-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
@@ -18,7 +18,7 @@ const formStyles = `
         flex: 1; padding: 11px 16px; background: #1d4ed8; color: white;
         border: none; border-radius: 8px; cursor: pointer;
         font-size: 13.5px; font-weight: 500;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', sans-serif;
         transition: background 0.15s, transform 0.1s;
         display: flex; align-items: center; justify-content: center; gap: 8px;
     }
@@ -29,7 +29,7 @@ const formStyles = `
         padding: 11px 22px; background: white;
         border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;
         font-size: 13.5px; color: #64748b;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', sans-serif;
         transition: background 0.15s, border-color 0.15s;
     }
     .pf-btn-secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
@@ -37,7 +37,7 @@ const formStyles = `
         background: none; border: none; cursor: pointer; padding: 0;
         display: flex; align-items: center; gap: 6px;
         font-size: 13px; color: #94a3b8;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', sans-serif;
         margin-bottom: 14px; transition: color 0.15s;
     }
     .pf-back-btn:hover { color: #475569; }
@@ -55,7 +55,7 @@ const formStyles = `
         padding: 9px 8px; border-radius: 8px; cursor: pointer;
         font-size: 12.5px; font-weight: 500; text-align: center;
         border: 1.5px solid #e2e8f0; background: white; color: #64748b;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', sans-serif;
         transition: all 0.15s ease;
         display: flex; align-items: center; justify-content: center; gap: 5px;
     }

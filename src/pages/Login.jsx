@@ -10,7 +10,7 @@ const loginStyles = `
         border: 1px solid #e5e7eb; box-sizing: border-box;
         font-size: 13.5px; outline: none; color: #111827;
         background: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', sans-serif;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .pf-input:focus {
@@ -23,7 +23,7 @@ const loginStyles = `
         background: #1d4ed8; color: white;
         border: none; border-radius: 8px; cursor: pointer;
         font-size: 14px; font-weight: 500; margin-top: 4px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', sans-serif;
         transition: background 0.15s ease, transform 0.1s ease;
         display: flex; align-items: center; justify-content: center; gap: 8px;
     }
@@ -66,7 +66,7 @@ export default function Login() {
                 backgroundImage: "radial-gradient(#e2e8f0 1px, transparent 1px)",
                 backgroundSize: "24px 24px",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                fontFamily: "'Inter', sans-serif",
             }}>
                 <div style={{ width: "100%", maxWidth: "380px", padding: "0 24px" }}>
 

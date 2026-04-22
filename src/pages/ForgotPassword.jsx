@@ -8,7 +8,7 @@ const fpStyles = `
         width: 100%; padding: 9px 12px; border-radius: 8px;
         border: 1px solid #e2e8f0; box-sizing: border-box;
         font-size: 13.5px; outline: none; color: #1e293b; background: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', sans-serif;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .pf-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
@@ -18,7 +18,7 @@ const fpStyles = `
         background: #1d4ed8; color: white;
         border: none; border-radius: 8px; cursor: pointer;
         font-size: 13.5px; font-weight: 500;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', sans-serif;
         transition: background 0.15s, transform 0.1s;
         display: flex; align-items: center; justify-content: center; gap: 8px;
     }
@@ -57,7 +57,7 @@ export default function ForgotPassword() {
         backgroundImage: "radial-gradient(#e2e8f0 1px, transparent 1px)",
         backgroundSize: "24px 24px",
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontFamily: "'Inter', sans-serif",
     };
 
     if (success) return (

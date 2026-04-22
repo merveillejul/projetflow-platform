@@ -53,7 +53,7 @@ export default function Register() {
         backgroundSize: "24px 24px",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: "40px 24px",
-        fontFamily: "Inter, -apple-system, sans-serif",
+        fontFamily: "Inter, 'Inter', sans-serif",
     };
 
     if (success) return (
