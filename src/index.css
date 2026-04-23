@@ -1,14 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@font-face { font-family: 'Inter'; src: url('/fonts/Inter_18pt-Regular.ttf'); font-weight: 400; }
+@font-face { font-family: 'Inter'; src: url('/fonts/Inter_18pt-Medium.ttf'); font-weight: 500; }
+@font-face { font-family: 'Inter'; src: url('/fonts/Inter_18pt-SemiBold.ttf'); font-weight: 600; }
+@font-face { font-family: 'Inter'; src: url('/fonts/Inter_18pt-Bold.ttf'); font-weight: 700; }
 
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 14px;
     color: #0f172a;
     background: #f8fafc;
@@ -17,7 +21,7 @@ body {
 }
 
 input, textarea, select, button {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 #root { min-height: 100vh; }
@@ -25,7 +29,15 @@ input, textarea, select, button {
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     color: #0f172a;
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
 p { margin: 0; }
+
+.hide-mobile { display: inline; }
+.show-mobile { display: none; }
+
+@media (max-width: 768px) {
+    .hide-mobile { display: none; }
+    .show-mobile { display: inline; }
+}
