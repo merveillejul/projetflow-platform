@@ -115,6 +115,7 @@ function ProjectsStack() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="ProjectsList"  component={ProjectsScreen} />
             <Stack.Screen name="ProjectDetail" component={ProjectDetailScreen} />
+            <Stack.Screen name="Planning"      component={PlanningScreen} />
         </Stack.Navigator>
     );
 }
@@ -183,14 +184,6 @@ function MainTabs() {
                 options={{
                     title: 'Tâches',
                     tabBarIcon: ({ color }) => <IconTasks color={color} />,
-                }}
-            />
-            <Tab.Screen
-                name="Planning"
-                component={PlanningScreen}
-                options={{
-                    title: 'Planning',
-                    tabBarIcon: ({ color }) => <IconCalendar color={color} />,
                 }}
             />
             <Tab.Screen

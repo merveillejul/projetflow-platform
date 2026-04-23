@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
     SafeAreaView, Animated, Easing,
 } from 'react-native';
+import Svg, { Path, Rect, Line } from 'react-native-svg';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -36,6 +37,18 @@ const STATUT_CONFIG = {
     termine:    { label: 'Terminé',    color: COLORS.green, bg: COLORS.greenBg, border: COLORS.greenBorder },
     suspendu:   { label: 'Suspendu',   color: COLORS.red,   bg: COLORS.redBg,   border: COLORS.redBorder   },
 };
+
+function IconCalendar({ color = "#1d4ed8", size = 16 }) {
+    return (
+        <Svg width={size} height={size} fill="none" stroke={color} strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <Rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <Line x1="16" y1="2" x2="16" y2="6" />
+            <Line x1="8" y1="2" x2="8" y2="6" />
+            <Line x1="3" y1="10" x2="21" y2="10" />
+        </Svg>
+    );
+}
 
 function SkeletonBox({ width, height, radius = 8, style }) {
     const opacity = React.useRef(new Animated.Value(0.4)).current;
@@ -98,8 +111,8 @@ function AvatarStack({ members, max = 4 }) {
 
 export default function ProjectsScreen({ navigation }) {
     const [projects, setProjects] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('tous');
+    const [loading, setLoading]   = useState(true);
+    const [filter, setFilter]     = useState('tous');
     const { user } = useAuth();
 
     useEffect(() => {
@@ -126,17 +139,29 @@ export default function ProjectsScreen({ navigation }) {
 
             {/* HEADER */}
             <View style={styles.header}>
-                <View>
+                <View style={{ flex: 1 }}>
                     <Text style={styles.title}>Projets</Text>
                     <Text style={styles.subtitle}>
                         {user?.role === 'membre' ? 'Projets auxquels vous participez' : 'Projets que vous gérez'}
                     </Text>
                 </View>
-                {!loading && (
-                    <View style={styles.countPill}>
-                        <Text style={styles.countText}>{filtered.length}</Text>
-                    </View>
-                )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    {/* BOUTON PLANNING */}
+                    <TouchableOpacity
+                        style={styles.planningBtn}
+                        onPress={() => navigation.navigate('Planning')}
+                        activeOpacity={0.75}
+                    >
+                        <IconCalendar color="#1d4ed8" size={15} />
+                        <Text style={styles.planningBtnText}>Planning</Text>
+                    </TouchableOpacity>
+
+                    {!loading && (
+                        <View style={styles.countPill}>
+                            <Text style={styles.countText}>{filtered.length}</Text>
+                        </View>
+                    )}
+                </View>
             </View>
 
             {/* FILTRES */}
@@ -218,7 +243,6 @@ export default function ProjectsScreen({ navigation }) {
                                         <Text style={styles.metaIcon}>○</Text>
                                         <Text style={styles.metaText}>{item.date_debut} → {item.date_fin}</Text>
                                     </View>
-
                                     {item.technologies?.length > 0 && (
                                         <View style={styles.techRow}>
                                             {item.technologies.slice(0, 3).map((tech, i) => (
@@ -269,8 +293,16 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start', paddingHorizontal: 20,
         paddingTop: 16, paddingBottom: 12,
     },
-    title: { fontSize: 22, fontWeight: '700', color: COLORS.text, letterSpacing: -0.5, marginBottom: 2 },
+    title:    { fontSize: 22, fontWeight: '700', color: COLORS.text, letterSpacing: -0.5, marginBottom: 2 },
     subtitle: { fontSize: 13, color: COLORS.textLight },
+
+    planningBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: COLORS.blueBg, borderWidth: 1, borderColor: COLORS.blueBorder,
+        borderRadius: 10, paddingHorizontal: 11, paddingVertical: 7,
+    },
+    planningBtnText: { fontSize: 12.5, fontWeight: '600', color: '#1d4ed8' },
+
     countPill: {
         backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
         borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, marginTop: 4,
@@ -306,7 +338,7 @@ const styles = StyleSheet.create({
     metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     metaIcon: { fontSize: 11, color: COLORS.textLight },
     metaText: { fontSize: 12, color: COLORS.textLight },
-    techRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+    techRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
     techPill: {
         backgroundColor: COLORS.blueBg, borderWidth: 1, borderColor: COLORS.blueBorder,
         paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5,
@@ -319,7 +351,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1, borderTopColor: COLORS.borderLight,
         paddingTop: 10, marginTop: 2,
     },
-    avatarStack: { flexDirection: 'row', alignItems: 'center' },
+    avatarStack:     { flexDirection: 'row', alignItems: 'center' },
     stackAvatar: {
         width: 24, height: 24, borderRadius: 12,
         backgroundColor: COLORS.purple,
@@ -327,7 +359,7 @@ const styles = StyleSheet.create({
         borderWidth: 2, borderColor: COLORS.white,
     },
     stackAvatarText: { fontSize: 9, fontWeight: '700', color: 'white' },
-    memberCount: { flex: 1, fontSize: 12, color: COLORS.textLight },
+    memberCount:     { flex: 1, fontSize: 12, color: COLORS.textLight },
     chevron: {
         width: 22, height: 22, borderRadius: 6,
         backgroundColor: COLORS.borderLight,
@@ -341,5 +373,5 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', marginBottom: 12,
     },
     emptyTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
-    emptySub: { fontSize: 13, color: COLORS.textLight },
+    emptySub:   { fontSize: 13, color: COLORS.textLight },
 });
