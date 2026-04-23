@@ -17,14 +17,13 @@ import TasksScreen from '../screens/TasksScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import PlanningScreen from '../screens/PlanningScreen';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const ACTIVE   = '#1d4ed8';
 const INACTIVE = '#94a3b8';
-
-// ─── Icônes SVG ───────────────────────────────────────────────────────────────
 
 function IconDashboard({ color, size = 22 }) {
     return (
@@ -77,7 +76,17 @@ function IconProfile({ color, size = 22 }) {
     );
 }
 
-// ─── Badge notifications ──────────────────────────────────────────────────────
+function IconCalendar({ color, size = 22 }) {
+    return (
+        <Svg width={size} height={size} fill="none" stroke={color} strokeWidth="1.75"
+            strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <Rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <Line x1="16" y1="2" x2="16" y2="6" />
+            <Line x1="8" y1="2" x2="8" y2="6" />
+            <Line x1="3" y1="10" x2="21" y2="10" />
+        </Svg>
+    );
+}
 
 function NotifIcon({ color, count }) {
     return (
@@ -101,8 +110,6 @@ function NotifIcon({ color, count }) {
     );
 }
 
-// ─── Stacks ───────────────────────────────────────────────────────────────────
-
 function ProjectsStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -111,8 +118,6 @@ function ProjectsStack() {
         </Stack.Navigator>
     );
 }
-
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 function MainTabs() {
     const [unreadCount, setUnreadCount] = useState(0);
@@ -181,6 +186,14 @@ function MainTabs() {
                 }}
             />
             <Tab.Screen
+                name="Planning"
+                component={PlanningScreen}
+                options={{
+                    title: 'Planning',
+                    tabBarIcon: ({ color }) => <IconCalendar color={color} />,
+                }}
+            />
+            <Tab.Screen
                 name="Notifications"
                 component={NotificationsScreen}
                 options={{
@@ -199,8 +212,6 @@ function MainTabs() {
         </Tab.Navigator>
     );
 }
-
-// ─── Navigator principal ──────────────────────────────────────────────────────
 
 export default function AppNavigator() {
     const { user, loading } = useAuth();
