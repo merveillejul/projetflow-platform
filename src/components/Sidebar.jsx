@@ -33,6 +33,18 @@ const NAV_ITEMS = [
         ),
     },
     {
+        to: "/planning",
+        label: "Planning",
+        icon: (
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+        ),
+    },
+    {
         to: "/notifications",
         label: "Notifications",
         badge: true,
@@ -105,7 +117,7 @@ const sidebarStyles = `
         width: 100%; display: flex; align-items: center; gap: 10px;
         padding: 7px 10px; border-radius: 7px; border: none;
         background: transparent; cursor: pointer; font-size: 13.5px;
-        color: #9ca3af; font-family: 'Inter', 'Inter', sans-serif;
+        color: #9ca3af; font-family: 'Inter', sans-serif;
         transition: background 0.15s ease, color 0.15s ease;
         border-left: 2px solid transparent; text-align: left;
     }
@@ -157,7 +169,6 @@ export default function Sidebar({ isOpen, onClose }) {
     const isAdminTabActive = (tab) => location.pathname === "/admin" && currentTab === tab;
     const roleConfig = getRoleConfig(user?.role);
 
-    // Ferme la sidebar au changement de page sur mobile
     useEffect(() => {
         if (onClose) onClose();
     }, [location.pathname, location.search]);
@@ -176,7 +187,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     flexDirection: "column",
                     position: "fixed",
                     top: 0, left: 0, zIndex: 100,
-                    fontFamily: "'Inter', 'Inter', sans-serif",
+                    fontFamily: "'Inter', sans-serif",
                     transition: "transform 0.25s ease",
                 }}
             >

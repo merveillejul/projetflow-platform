@@ -13,7 +13,7 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-
+import Planning from "./pages/Planning";
 
 
 export default function App() {
@@ -55,6 +55,9 @@ export default function App() {
                 } />
                 <Route path="/profile" element={
                     <ProtectedRoute><Profile /></ProtectedRoute>
+                } />
+                <Route path="/planning" element={
+                    <ProtectedRoute><Planning /></ProtectedRoute>
                 } />
                 
                 <Route path="/forgot-password" element={<ForgotPassword />} />
