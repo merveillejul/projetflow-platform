@@ -37,7 +37,23 @@ p { margin: 0; }
 .hide-mobile { display: inline; }
 .show-mobile { display: none; }
 
+/* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-    .hide-mobile { display: none; }
-    .show-mobile { display: inline; }
+    .cal-th { font-size:9px; padding:6px 0; letter-spacing:0; }
+    .cal-td { height:60px; padding:3px 2px; }
+    .ev { padding:2px 3px; margin-bottom:2px; border-left-width:2px; }
+    .ev-title { font-size:8.5px; }
+    .ev-sub { display:none; }
+    .pf-plan-header { flex-direction:column !important; align-items:flex-start !important; gap:10px !important; }
+    .pf-plan-stats { display:none !important; }
+    .pf-plan-nav { flex-direction:column !important; align-items:flex-start !important; gap:8px !important; }
+    .pf-plan-chips { flex-wrap:wrap; }
+    .pf-month-label { min-width:100px !important; font-size:15px !important; }
+    .hide-mobile { display:none !important; }
+    .show-mobile { display:inline !important; }
+}
+@media (max-width: 480px) {
+    .cal-th { font-size:8px; padding:5px 0; }
+    .cal-td { height:50px; padding:2px 1px; }
+    .ev-title { font-size:7.5px; }
 }

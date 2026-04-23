@@ -10,7 +10,7 @@ const STATUT = {
 };
 
 const MONTHS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-const DAYS_DESKTOP = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+const DAYS_DESKTOP = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
 const DAYS_MOBILE  = ["L","M","M","J","V","S","D"];
 
 const css = `
