@@ -45,8 +45,9 @@ return [
     | "expires_at" attribute, but first-party sessions are not affected.
     |
     */
-
-    'expiration' => null,
+    
+    // ✅ Après — token expire après 120 minutes (2 heures)
+    'expiration' => 120,
 
     /*
     |--------------------------------------------------------------------------

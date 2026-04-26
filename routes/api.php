@@ -1,5 +1,6 @@
 <?php
-
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Hash;
@@ -14,12 +15,26 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DashboardController;
 use App\Models\Task;
 
+
+// ═══════════════════════════════════════
+// JUSTE AVANT les routes publiques — définir la règle
+// ═══════════════════════════════════════
+RateLimiter::for('login', function (Request $request) {
+    return Limit::perMinute(5)
+        ->by($request->input('email') . '|' . $request->ip())
+        ->response(function () {
+            return response()->json([
+                'message' => 'Trop de tentatives. Réessayez dans 1 minute.',
+            ], 429);
+        });
+});
+
 // ═══════════════════════════════════════
 // ROUTES PUBLIQUES
 // ═══════════════════════════════════════
 Route::get('/', fn() => response()->json(['message' => 'ProjectFlow API fonctionne']));
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login',    [AuthController::class, 'login']);
+Route::middleware('throttle:login')->post('/login', [AuthController::class, 'login']);
 
 // Mot de passe oublié — pas besoin d'être connecté
 Route::post('/auth/forgot-password', function (Request $request) {
@@ -38,7 +53,7 @@ Route::post('/auth/forgot-password', function (Request $request) {
         ['token' => Hash::make($token), 'created_at' => now()]
     );
 
-    $resetUrl = 'http://localhost:5173/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+    $resetUrl = 'https://projectflow-web-pink.vercel.app/reset-password?token=' . $token . '&email=' . urlencode($user->email);
 
     \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\ReinitialisationMdp($user->nom, $resetUrl));
 
@@ -49,7 +64,16 @@ Route::post('/auth/reset-password', function (Request $request) {
     $request->validate([
         'email'    => 'required|email',
         'token'    => 'required',
-        'password' => 'required|min:12|confirmed',
+        'password' => [
+        'required',
+        'min:12',
+        'regex:/[A-Z]/',
+        'regex:/[a-z]/',
+        'regex:/[0-9]/',
+        'regex:/[@$!%*#?&^_\-+=]/',
+        'confirmed',
+    ],
+
     ]);
 
     $record = \DB::table('password_reset_tokens')
@@ -86,19 +110,38 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user', [AuthController::class, 'updateProfile']);
 
     // Changement mot de passe
+    //  validation forte + révocation des tokens :
     Route::post('/auth/change-password', function (Request $request) {
         $request->validate([
             'current_password' => 'required',
-            'password'         => 'required|min:12|confirmed',
+            'password' => [
+                'required',
+                'min:12',
+                'regex:/[A-Z]/',
+                'regex:/[a-z]/',
+                'regex:/[0-9]/',
+                'regex:/[@$!%*#?&^_\-+=]/',
+                'confirmed',
+            ],
+        ], [
+            'password.min'      => 'Le mot de passe doit contenir au moins 12 caractères.',
+            'password.regex'    => 'Doit contenir majuscule, minuscule, chiffre et caractère spécial.',
+            'password.confirmed'=> 'La confirmation ne correspond pas.',
         ]);
+
         if (!Hash::check($request->current_password, $request->user()->password)) {
             return response()->json(['message' => 'Mot de passe actuel incorrect.'], 422);
         }
+
         $request->user()->update([
             'password'    => Hash::make($request->password),
             'first_login' => false,
         ]);
-        return response()->json(['message' => 'Mot de passe mis à jour.']);
+
+        // ✅ Révoquer tous les tokens — force une reconnexion sécurisée
+        $request->user()->tokens()->delete();
+
+        return response()->json(['message' => 'Mot de passe mis à jour. Veuillez vous reconnecter.']);
     });
 
     // Première connexion
@@ -125,7 +168,7 @@ Route::middleware('auth:sanctum')->group(function () {
         }
 
         $path = $request->file('photo')->store('photos', 'public');
-        $fullUrl = url('/storage/' . $path);
+        $fullUrl = 'https://projetflow-platform-production.up.railway.app/storage/' . $path;
         $user->update(['photo' => $fullUrl]);
 
         return response()->json(['message' => 'Photo mise à jour.', 'photo' => $fullUrl]);
