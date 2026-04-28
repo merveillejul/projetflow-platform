@@ -57,12 +57,50 @@ Route::post('/auth/forgot-password', function (Request $request) {
         . '/reset-password?token=' . $token
         . '&email=' . urlencode($user->email);
 
+    // ✅ API HTTP Brevo — pas de SMTP, pas de timeout
     try {
-        \Illuminate\Support\Facades\Mail::to($user->email)
-            ->send(new \App\Mail\ReinitialisationMdp($user->nom, $resetUrl));
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'api-key' => env('BREVO_API_KEY'),
+            'Content-Type' => 'application/json',
+        ])->post('https://api.brevo.com/v3/smtp/email', [
+            'sender' => [
+                'name'  => 'ProjectFlow',
+                'email' => 'noreply@projectflow.fr',
+            ],
+            'to' => [[
+                'email' => $user->email,
+                'name'  => $user->nom,
+            ]],
+            'subject' => 'Réinitialisation de votre mot de passe ProjectFlow',
+            'htmlContent' => '
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background: #1e3a5f; padding: 24px; text-align: center;">
+                        <h1 style="color: white; margin: 0;">ProjectFlow</h1>
+                    </div>
+                    <div style="padding: 32px; background: #f8fafc;">
+                        <h2 style="color: #0f172a;">Bonjour ' . $user->nom . ',</h2>
+                        <p style="color: #475569;">Vous avez demandé la réinitialisation de votre mot de passe.</p>
+                        <p style="color: #475569;">Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe :</p>
+                        <div style="text-align: center; margin: 32px 0;">
+                            <a href="' . $resetUrl . '" 
+                               style="background: #1d4ed8; color: white; padding: 12px 32px; 
+                                      border-radius: 8px; text-decoration: none; font-weight: bold;">
+                                Réinitialiser mon mot de passe
+                            </a>
+                        </div>
+                        <p style="color: #94a3b8; font-size: 13px;">Ce lien expire dans 60 minutes.</p>
+                        <p style="color: #94a3b8; font-size: 13px;">Si vous n\'avez pas fait cette demande, ignorez cet email.</p>
+                    </div>
+                </div>
+            ',
+        ]);
+
+        if (!$response->successful()) {
+            \Log::error('Brevo API error: ' . $response->body());
+        }
+
     } catch (\Exception $e) {
         \Log::error('Mail error: ' . $e->getMessage());
-        return response()->json(['message' => 'Si cet email existe, un lien vous a été envoyé.']);
     }
 
     return response()->json(['message' => 'Si cet email existe, un lien vous a été envoyé.']);
