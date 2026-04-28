@@ -65,7 +65,7 @@ Route::post('/auth/forgot-password', function (Request $request) {
         ])->post('https://api.brevo.com/v3/smtp/email', [
             'sender' => [
                 'name'  => 'ProjectFlow',
-                'email' => 'noreply@projectflow.fr',
+                'email' => 'merveillenourryssou@outlook.fr',
             ],
             'to' => [[
                 'email' => $user->email,
