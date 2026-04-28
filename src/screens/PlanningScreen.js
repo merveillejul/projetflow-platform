@@ -127,13 +127,13 @@ export default function PlanningScreen() {
     ];
 
     if (loading) return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
             <PlanningSkeleton />
         </SafeAreaView>
     );
 
     return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                 {/* ── Header ── */}

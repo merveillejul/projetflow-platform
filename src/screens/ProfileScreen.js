@@ -248,7 +248,7 @@ export default function ProfileScreen() {
     const pwMatch = pwForm.password && pwForm.password_confirmation && pwForm.password === pwForm.password_confirmation;
 
     return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                 {/* ══ HERO ══ */}

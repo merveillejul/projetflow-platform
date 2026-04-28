@@ -253,7 +253,7 @@ export default function ProjectDetailScreen({ route }) {
     const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
 
     if (loading) return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
             <ScrollView contentContainerStyle={styles.container}>
                 <View style={{ gap:12 }}>
                     <View style={{ backgroundColor:COLORS.white, borderRadius:14, padding:16, borderWidth:1, borderColor:COLORS.border, gap:12 }}>
@@ -278,7 +278,7 @@ export default function ProjectDetailScreen({ route }) {
     );
 
     if (!project) return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
                 <Text style={{ color:COLORS.textLight, fontSize:14 }}>Projet introuvable.</Text>
             </View>
@@ -288,7 +288,7 @@ export default function ProjectDetailScreen({ route }) {
     const projetConf = PROJET_STATUT[project.statut];
 
     return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                 {/* ── En-tête projet ── */}

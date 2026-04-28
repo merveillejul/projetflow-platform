@@ -133,7 +133,7 @@ export default function ChangePasswordScreen() {
     const match = password && confirm && password === confirm;
 
     return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
             <KeyboardAvoidingView style={{ flex:1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <ScrollView
                     contentContainerStyle={styles.scroll}

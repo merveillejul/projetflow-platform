@@ -55,7 +55,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     };
 
     if (success) return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.successContainer}>
                 <View style={styles.successIcon}>
                     <Svg width="28" height="28" fill="none" stroke={COLORS.green} strokeWidth="2"
@@ -76,7 +76,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     );
 
     return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
             <KeyboardAvoidingView style={{ flex:1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
