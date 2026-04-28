@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, Modal, SafeAreaView, Animated, Easing,
+    ScrollView, Modal, Animated, Easing,
 } from 'react-native';
 import API from '../services/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
     bg:          '#F8FAFC',

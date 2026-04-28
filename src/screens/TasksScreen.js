@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
-    SafeAreaView, Animated, Easing,
+    Animated, Easing,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../services/api';
 
 const COLORS = {

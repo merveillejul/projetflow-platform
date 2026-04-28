@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet,
-    SafeAreaView, KeyboardAvoidingView, Platform, ScrollView,
+    KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../services/api';
 import Svg, { Path, Rect, Line } from 'react-native-svg';
 

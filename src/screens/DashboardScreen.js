@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView,
-    SafeAreaView, Animated, Easing,
+    View, Text, StyleSheet, ScrollView, Animated, Easing,
 } from 'react-native';
 import Svg, { G, Path, Text as SvgText, Circle } from 'react-native-svg';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
     bg:          '#F8FAFC',

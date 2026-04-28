@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
-    View, Text, TextInput, TouchableOpacity, StyleSheet,
-    SafeAreaView, KeyboardAvoidingView, Platform, ScrollView,
+    View, Text, TextInput, TouchableOpacity, StyleSheet, 
+    KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import API from '../services/api';
 import Svg, { Rect, Path, Polyline } from 'react-native-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
     bg:          '#F8FAFC',

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
-    View, Text, TextInput, TouchableOpacity, StyleSheet,
-    SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Alert,
+    View, Text, TextInput, TouchableOpacity, StyleSheet, 
+    KeyboardAvoidingView, Platform, ScrollView, Alert,
 } from 'react-native';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Rect } from 'react-native-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
     bg:          '#F8FAFC',
