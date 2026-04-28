@@ -46,16 +46,24 @@ Route::post('/auth/forgot-password', function (Request $request) {
         return response()->json(['message' => 'Si cet email existe, un lien vous a été envoyé.']);
     }
 
-    $token = Str::random(64);
+    $token = \Illuminate\Support\Str::random(64);
 
     \DB::table('password_reset_tokens')->updateOrInsert(
         ['email' => $user->email],
-        ['token' => Hash::make($token), 'created_at' => now()]
+        ['token' => \Illuminate\Support\Facades\Hash::make($token), 'created_at' => now()]
     );
 
-    $resetUrl = 'https://projectflow-web-pink.vercel.app/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+    $resetUrl = env('FRONTEND_URL', 'https://projectflow-web-pink.vercel.app')
+        . '/reset-password?token=' . $token
+        . '&email=' . urlencode($user->email);
 
-    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\ReinitialisationMdp($user->nom, $resetUrl));
+    try {
+        \Illuminate\Support\Facades\Mail::to($user->email)
+            ->send(new \App\Mail\ReinitialisationMdp($user->nom, $resetUrl));
+    } catch (\Exception $e) {
+        \Log::error('Mail error: ' . $e->getMessage());
+        return response()->json(['message' => 'Si cet email existe, un lien vous a été envoyé.']);
+    }
 
     return response()->json(['message' => 'Si cet email existe, un lien vous a été envoyé.']);
 });
@@ -154,24 +162,37 @@ Route::middleware('auth:sanctum')->group(function () {
         return response()->json(['message' => 'Mot de passe défini.']);
     });
 
-    // Photo de profil
+    // Photo de profil — Cloudinary
     Route::post('/user/photo', function (Request $request) {
-        $request->validate(['photo' => 'required|image|max:2048']);
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
         $user = $request->user();
 
-        // Supprimer l'ancienne photo si elle existe
-        if ($user->photo) {
-            $oldPath = str_replace(url('/storage/'), '', $user->photo);
-            if (\Storage::disk('public')->exists($oldPath)) {
-                \Storage::disk('public')->delete($oldPath);
-            }
+        try {
+            $result = cloudinary()->upload($request->file('photo')->getRealPath(), [
+                'folder'    => 'projectflow/photos',
+                'public_id' => 'user_' . $user->id,
+                'overwrite' => true,
+                'transformation' => [
+                    'width' => 400, 'height' => 400,
+                    'crop' => 'fill', 'gravity' => 'face',
+                ],
+            ]);
+
+            $photoUrl = $result->getSecurePath();
+            $user->update(['photo' => $photoUrl]);
+
+            return response()->json([
+                'message' => 'Photo mise à jour.',
+                'photo'   => $photoUrl,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Cloudinary error: ' . $e->getMessage());
+            return response()->json(['message' => 'Erreur upload: ' . $e->getMessage()], 500);
         }
-
-        $path = $request->file('photo')->store('photos', 'public');
-        $fullUrl = 'https://projetflow-platform-production.up.railway.app/storage/' . $path;
-        $user->update(['photo' => $fullUrl]);
-
-        return response()->json(['message' => 'Photo mise à jour.', 'photo' => $fullUrl]);
     });
 
     // Mes tâches assignées
