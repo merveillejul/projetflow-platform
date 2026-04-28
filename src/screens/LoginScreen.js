@@ -5,46 +5,71 @@ import {
 } from 'react-native';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
- 
+import Svg, { Path, Circle, Line, Rect } from 'react-native-svg';
+
 const COLORS = {
-    bg:        '#f8fafc',
-    white:     '#ffffff',
-    border:    '#e2e8f0',
-    text:      '#0f172a',
-    textMuted: '#64748b',
-    textLight: '#94a3b8',
-    blue:      '#1d4ed8',
-    blueMid:   '#3b82f6',
-    blueBg:    '#eff6ff',
-    red:       '#ef4444',
-    redBg:     '#fef2f2',
-    redBorder: '#fecaca',
+    bg:        '#F8FAFC',
+    white:     '#FFFFFF',
+    border:    '#E2E8F0',
+    text:      '#0F172A',
+    textMuted: '#64748B',
+    textLight: '#94A3B8',
+    // Dark premium (remplace blue)
+    primary:   '#0F172A',
+    primaryMd: '#1E293B',
+    // Bleu secondaire uniquement pour focus/lien
+    blue:      '#6366F1',
+    blueMid:   '#818CF8',
+    blueBg:    '#EEF2FF',
+    red:       '#EF4444',
+    redBg:     '#FEF2F2',
+    redBorder: '#FECACA',
 };
- 
-function EyeIcon({ visible }) {
-    if (visible) {
-        return (
-            <Text style={{ fontSize: 15, color: COLORS.textLight }}>🙈</Text>
-        );
-    }
+
+function LogoIcon() {
     return (
-        <Text style={{ fontSize: 15, color: COLORS.textLight }}>👁️</Text>
+        <Svg width="20" height="20" fill="none" stroke="white" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <Rect x="3" y="3" width="7" height="7" rx="1"/>
+            <Rect x="14" y="3" width="7" height="7" rx="1"/>
+            <Rect x="14" y="14" width="7" height="7" rx="1"/>
+            <Rect x="3" y="14" width="7" height="7" rx="1"/>
+        </Svg>
     );
 }
- 
-function InputField({ label, value, onChangeText, placeholder, secureTextEntry, keyboardType, autoCapitalize }) {
+
+function EyeIcon({ visible }) {
+    const color = COLORS.textLight;
+    if (visible) return (
+        <Svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+            <Path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+            <Line x1="1" y1="1" x2="23" y2="23"/>
+        </Svg>
+    );
+    return (
+        <Svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <Circle cx="12" cy="12" r="3"/>
+        </Svg>
+    );
+}
+
+function InputField({ label, value, onChangeText, placeholder, secureTextEntry, keyboardType, autoCapitalize, rightAction }) {
     const [focused, setFocused] = useState(false);
     const [passwordVisible, setPasswordVisible] = useState(false);
- 
+
     return (
-        <View style={{ marginBottom: 14 }}>
+        <View style={{ marginBottom: 16 }}>
             <Text style={styles.label}>{label}</Text>
             <View style={{ position: 'relative' }}>
                 <TextInput
                     style={[
                         styles.input,
                         focused && styles.inputFocused,
-                        secureTextEntry && { paddingRight: 44 },
+                        secureTextEntry && { paddingRight: 48 },
                     ]}
                     placeholder={placeholder}
                     placeholderTextColor={COLORS.textLight}
@@ -70,14 +95,14 @@ function InputField({ label, value, onChangeText, placeholder, secureTextEntry, 
         </View>
     );
 }
- 
+
 export default function LoginScreen({ navigation }) {
     const { login } = useAuth();
-    const [email, setEmail] = useState('');
+    const [email, setEmail]       = useState('');
     const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
- 
+    const [loading, setLoading]   = useState(false);
+    const [error, setError]       = useState('');
+
     const handleLogin = async () => {
         setError('');
         if (!email || !password) { setError('Veuillez remplir tous les champs.'); return; }
@@ -87,40 +112,33 @@ export default function LoginScreen({ navigation }) {
             await login(res.data.user, res.data.token);
         } catch (err) {
             setError('Email ou mot de passe incorrect.');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
- 
+
     return (
         <SafeAreaView style={styles.safe}>
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            >
-                <ScrollView
-                    contentContainerStyle={styles.scroll}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* LOGO */}
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+
+                    {/* LOGO — dark premium */}
                     <View style={styles.logoBlock}>
                         <View style={styles.logoIcon}>
-                            <Text style={{ fontSize: 18, color: 'white', fontWeight: '700' }}>⚡</Text>
+                            <LogoIcon />
                         </View>
                         <Text style={styles.logoText}>ProjectFlow</Text>
                         <Text style={styles.logoSub}>Connexion à votre espace de travail</Text>
                     </View>
- 
+
                     {/* CARD */}
                     <View style={styles.card}>
+
                         {error !== '' && (
                             <View style={styles.errorBox}>
-                                <Text style={styles.errorDot}>●</Text>
+                                <View style={styles.errorDot} />
                                 <Text style={styles.errorText}>{error}</Text>
                             </View>
                         )}
- 
+
                         <InputField
                             label="Adresse email"
                             value={email}
@@ -135,15 +153,16 @@ export default function LoginScreen({ navigation }) {
                             placeholder="••••••••"
                             secureTextEntry
                         />
- 
+
                         <TouchableOpacity
                             onPress={() => navigation.navigate('ForgotPassword')}
-                            style={{ alignSelf: 'flex-end', marginTop: -6, marginBottom: 20 }}
+                            style={{ alignSelf: 'flex-end', marginTop: -6, marginBottom: 22 }}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                             <Text style={styles.forgotLink}>Mot de passe oublié ?</Text>
                         </TouchableOpacity>
- 
+
+                        {/* Bouton dark premium */}
                         <TouchableOpacity
                             style={[styles.btn, loading && { opacity: 0.7 }]}
                             onPress={handleLogin}
@@ -151,7 +170,7 @@ export default function LoginScreen({ navigation }) {
                             activeOpacity={0.85}
                         >
                             {loading ? (
-                                <View style={styles.btnLoadingRow}>
+                                <View style={styles.btnRow}>
                                     <View style={styles.spinner} />
                                     <Text style={styles.btnText}>Connexion...</Text>
                                 </View>
@@ -160,8 +179,7 @@ export default function LoginScreen({ navigation }) {
                             )}
                         </TouchableOpacity>
                     </View>
- 
-                    {/* INSCRIPTION */}
+
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Register')}
                         style={styles.registerRow}
@@ -170,80 +188,98 @@ export default function LoginScreen({ navigation }) {
                         <Text style={styles.registerText}>Pas encore de compte ? </Text>
                         <Text style={styles.registerLink}>Créer un compte</Text>
                     </TouchableOpacity>
+
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
- 
+
 const styles = StyleSheet.create({
     safe: { flex: 1, backgroundColor: COLORS.bg },
-    scroll: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingBottom: 40 },
- 
-    logoBlock: { alignItems: 'center', marginBottom: 32 },
+    scroll: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingBottom: 48 },
+
+    logoBlock: { alignItems: 'center', marginBottom: 36 },
     logoIcon: {
-        width: 52, height: 52, borderRadius: 14,
-        backgroundColor: COLORS.blue,
+        width: 56, height: 56, borderRadius: 16,
+        backgroundColor: COLORS.primary,
         alignItems: 'center', justifyContent: 'center',
-        marginBottom: 14,
+        marginBottom: 16,
+        shadowColor: COLORS.primary,
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 6,
     },
     logoText: {
-        fontSize: 22, fontWeight: '700', color: COLORS.text,
-        letterSpacing: -0.5, marginBottom: 6,
+        fontSize: 24, fontWeight: '700', color: COLORS.text,
+        letterSpacing: -0.6, marginBottom: 6,
     },
     logoSub: { fontSize: 13.5, color: COLORS.textMuted, textAlign: 'center' },
- 
+
     card: {
-        backgroundColor: COLORS.white, borderRadius: 16,
-        padding: 22, borderWidth: 1, borderColor: COLORS.border,
-        marginBottom: 20,
+        backgroundColor: COLORS.white, borderRadius: 20,
+        padding: 24, marginBottom: 24,
+        borderWidth: 1, borderColor: COLORS.border,
+        shadowColor: '#0F172A',
+        shadowOpacity: 0.06,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 3,
     },
- 
+
     errorBox: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+        flexDirection: 'row', alignItems: 'flex-start', gap: 10,
         backgroundColor: COLORS.redBg, borderWidth: 1, borderColor: COLORS.redBorder,
-        borderRadius: 8, padding: 10, marginBottom: 16,
+        borderRadius: 10, padding: 11, marginBottom: 18,
     },
-    errorDot: { fontSize: 10, color: COLORS.red, marginTop: 3 },
-    errorText: { flex: 1, fontSize: 13, color: '#b91c1c', lineHeight: 18 },
- 
-    label: { fontSize: 12.5, fontWeight: '600', color: '#475569', marginBottom: 6 },
+    errorDot: {
+        width: 6, height: 6, borderRadius: 3,
+        backgroundColor: COLORS.red, marginTop: 5, flexShrink: 0,
+    },
+    errorText: { flex: 1, fontSize: 13, color: '#B91C1C', lineHeight: 19 },
+
+    label: {
+        fontSize: 12.5, fontWeight: '600', color: '#475569',
+        marginBottom: 7, letterSpacing: 0.1,
+    },
     input: {
-        backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
-        borderRadius: 10, paddingHorizontal: 13, paddingVertical: 12,
+        backgroundColor: '#FAFAFA', borderWidth: 1, borderColor: COLORS.border,
+        borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13,
         fontSize: 15, color: COLORS.text,
     },
     inputFocused: {
-        borderColor: COLORS.blueMid,
-        shadowColor: COLORS.blueMid,
-        shadowOpacity: 0.12,
-        shadowRadius: 4,
-        elevation: 2,
+        borderColor: COLORS.blue,
+        backgroundColor: COLORS.white,
+        shadowColor: COLORS.blue,
+        shadowOpacity: 0.1, shadowRadius: 6, elevation: 2,
     },
- 
     eyeBtn: {
-        position: 'absolute',
-        right: 12,
-        top: '50%',
-        marginTop: -12,
-        padding: 4,
+        position: 'absolute', right: 13,
+        top: '50%', marginTop: -12, padding: 4,
     },
- 
-    forgotLink: { fontSize: 12.5, color: COLORS.textMuted, fontWeight: '500' },
- 
+    forgotLink: {
+        fontSize: 12.5, color: COLORS.textMuted,
+        fontWeight: '500',
+    },
+
     btn: {
-        backgroundColor: COLORS.blue, borderRadius: 10,
-        paddingVertical: 14, alignItems: 'center',
+        backgroundColor: COLORS.primary, borderRadius: 12,
+        paddingVertical: 15, alignItems: 'center',
+        shadowColor: COLORS.primary,
+        shadowOpacity: 0.2, shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 4,
     },
-    btnText: { color: 'white', fontSize: 15, fontWeight: '600' },
-    btnLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    btnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    btnText: { color: 'white', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
     spinner: {
-        width: 14, height: 14, borderRadius: 7,
+        width: 15, height: 15, borderRadius: 8,
         borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
         borderTopColor: 'white',
     },
- 
+
     registerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
     registerText: { fontSize: 13.5, color: COLORS.textMuted },
-    registerLink: { fontSize: 13.5, color: COLORS.blue, fontWeight: '600' },
+    registerLink: { fontSize: 13.5, color: COLORS.primary, fontWeight: '700' },
 });

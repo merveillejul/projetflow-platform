@@ -6,57 +6,63 @@ import {
 import API from '../services/api';
 
 const COLORS = {
-    bg:          '#f8fafc',
-    white:       '#ffffff',
-    border:      '#e2e8f0',
-    borderLight: '#f1f5f9',
-    text:        '#0f172a',
-    textMuted:   '#64748b',
-    textLight:   '#94a3b8',
-    blue:        '#3b82f6',
-    blueBg:      '#eff6ff',
-    blueBorder:  '#bfdbfe',
-    green:       '#10b981',
-    greenBg:     '#f0fdf4',
-    greenBorder: '#bbf7d0',
-    amber:       '#f59e0b',
-    amberBg:     '#fffbeb',
-    amberBorder: '#fde68a',
+    bg:          '#F8FAFC',
+    white:       '#FFFFFF',
+    border:      '#E2E8F0',
+    borderLight: '#F1F5F9',
+    text:        '#0F172A',
+    textMuted:   '#64748B',
+    textLight:   '#94A3B8',
+    primary:     '#0F172A',
+    indigo:      '#6366F1',
+    indigoBg:    '#EEF2FF',
+    indigoBorder:'#C7D2FE',
+    green:       '#10B981',
+    greenBg:     '#ECFDF5',
+    greenBorder: '#A7F3D0',
+    amber:       '#F59E0B',
+    amberBg:     '#FFFBEB',
+    amberBorder: '#FDE68A',
 };
 
 const STATUT_CONFIG = {
-    a_faire:  { label: 'À faire',  color: COLORS.amber, bg: COLORS.amberBg, border: COLORS.amberBorder, next: 'en_cours', nextLabel: 'En cours'  },
-    en_cours: { label: 'En cours', color: COLORS.blue,  bg: COLORS.blueBg,  border: COLORS.blueBorder,  next: 'termine',  nextLabel: 'Terminé'   },
-    termine:  { label: 'Terminé',  color: COLORS.green, bg: COLORS.greenBg, border: COLORS.greenBorder, next: 'a_faire',  nextLabel: 'À faire'   },
+    a_faire:  { label:'À faire',  color:COLORS.amber,  bg:COLORS.amberBg,  border:COLORS.amberBorder,  dot:'#F59E0B' },
+    en_cours: { label:'En cours', color:COLORS.indigo, bg:COLORS.indigoBg, border:COLORS.indigoBorder, dot:'#6366F1' },
+    termine:  { label:'Terminé',  color:COLORS.green,  bg:COLORS.greenBg,  border:COLORS.greenBorder,  dot:'#10B981' },
 };
 
-function SkeletonBox({ width, height, radius = 8, style }) {
+/* ─── Skeleton ──────────────────────────────────────────────────── */
+function SkeletonBox({ width, height, radius=8, style }) {
     const opacity = React.useRef(new Animated.Value(0.4)).current;
     React.useEffect(() => {
         Animated.loop(
             Animated.sequence([
-                Animated.timing(opacity, { toValue: 1,   duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-                Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+                Animated.timing(opacity, { toValue:1,   duration:700, useNativeDriver:true, easing:Easing.inOut(Easing.ease) }),
+                Animated.timing(opacity, { toValue:0.4, duration:700, useNativeDriver:true, easing:Easing.inOut(Easing.ease) }),
             ])
         ).start();
     }, []);
-    return <Animated.View style={[{ width, height, borderRadius: radius, backgroundColor: '#e2e8f0', opacity }, style]} />;
+    return <Animated.View style={[{ width, height, borderRadius:radius, backgroundColor:'#E2E8F0', opacity }, style]} />;
 }
 
 function TaskSkeleton() {
     return (
-        <View style={{ padding: 16, gap: 10 }}>
+        <View style={{ padding:16, gap:10 }}>
             {[0,1,2,3].map(i => (
-                <View key={i} style={{ backgroundColor: COLORS.white, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: COLORS.border, gap: 10 }}>
-                    <SkeletonBox width="40%" height={11} />
-                    <SkeletonBox width="75%" height={15} />
-                    <SkeletonBox width="100%" height={38} radius={9} />
+                <View key={i} style={{ backgroundColor:COLORS.white, borderRadius:14, padding:16, borderWidth:1, borderColor:COLORS.border, gap:10 }}>
+                    <View style={{ flexDirection:'row', justifyContent:'space-between' }}>
+                        <SkeletonBox width="40%" height={11} />
+                        <SkeletonBox width={70} height={22} radius={20} />
+                    </View>
+                    <SkeletonBox width="75%" height={16} />
+                    <SkeletonBox width="100%" height={42} radius={10} />
                 </View>
             ))}
         </View>
     );
 }
 
+/* ─── Écran ─────────────────────────────────────────────────────── */
 export default function TasksScreen() {
     const [tasks, setTasks]     = useState([]);
     const [loading, setLoading] = useState(true);
@@ -87,16 +93,16 @@ export default function TasksScreen() {
     };
 
     const FILTERS = [
-        { key: 'tous',     label: 'Toutes' },
-        { key: 'a_faire',  label: 'À faire' },
-        { key: 'en_cours', label: 'En cours' },
-        { key: 'termine',  label: 'Terminé' },
+        { key:'tous',     label:'Toutes',   dot:'#94A3B8', activeBg:COLORS.primary,   activeColor:'white',        activeBorder:COLORS.primary },
+        { key:'a_faire',  label:'À faire',  dot:COLORS.amber,  activeBg:COLORS.amberBg,   activeColor:COLORS.amber,   activeBorder:COLORS.amberBorder },
+        { key:'en_cours', label:'En cours', dot:COLORS.indigo, activeBg:COLORS.indigoBg,  activeColor:COLORS.indigo,  activeBorder:COLORS.indigoBorder },
+        { key:'termine',  label:'Terminé',  dot:COLORS.green,  activeBg:COLORS.greenBg,   activeColor:COLORS.green,   activeBorder:COLORS.greenBorder },
     ];
 
     return (
         <SafeAreaView style={styles.safe}>
 
-            {/* HEADER */}
+            {/* ── Header ── */}
             <View style={styles.header}>
                 <View>
                     <Text style={styles.title}>Mes tâches</Text>
@@ -104,47 +110,39 @@ export default function TasksScreen() {
                         {tasks.length} tâche{tasks.length !== 1 ? 's' : ''} assignée{tasks.length !== 1 ? 's' : ''}
                     </Text>
                 </View>
+                {!loading && (
+                    <View style={styles.totalPill}>
+                        <Text style={styles.totalPillText}>{filtered.length}</Text>
+                    </View>
+                )}
             </View>
 
-            {/* FILTRES */}
+            {/* ── Filtres ── */}
             {!loading && (
-                <View style={{ paddingBottom: 12 }}>
+                <View style={{ paddingBottom:12 }}>
                     <FlatList
                         horizontal
                         data={FILTERS}
                         keyExtractor={f => f.key}
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingHorizontal: 16, gap: 7 }}
+                        contentContainerStyle={{ paddingHorizontal:16, gap:7 }}
                         renderItem={({ item: f }) => {
-                            const conf     = STATUT_CONFIG[f.key];
                             const isActive = filter === f.key;
                             return (
                                 <TouchableOpacity
                                     style={[
                                         styles.filterBtn,
-                                        isActive && (f.key === 'tous'
-                                            ? { backgroundColor: COLORS.text, borderColor: COLORS.text }
-                                            : { backgroundColor: conf.bg, borderColor: conf.border }),
+                                        isActive && { backgroundColor:f.activeBg, borderColor:f.activeBorder },
                                     ]}
                                     onPress={() => setFilter(f.key)}
                                     activeOpacity={0.7}
                                 >
-                                    <Text style={[
-                                        styles.filterText,
-                                        isActive && (f.key === 'tous'
-                                            ? { color: 'white' }
-                                            : { color: conf.color }),
-                                    ]}>
+                                    <View style={[styles.filterDot, { backgroundColor: isActive ? f.activeColor : f.dot, opacity: isActive ? 0.7 : 1 }]} />
+                                    <Text style={[styles.filterText, isActive && { color:f.activeColor, fontWeight:'700' }]}>
                                         {f.label}
                                     </Text>
-                                    <View style={[
-                                        styles.filterCount,
-                                        isActive && { backgroundColor: 'rgba(255,255,255,0.3)' },
-                                    ]}>
-                                        <Text style={[
-                                            styles.filterCountText,
-                                            isActive && (f.key === 'tous' ? { color: 'white' } : { color: conf.color }),
-                                        ]}>
+                                    <View style={[styles.filterCount, isActive && { backgroundColor:'rgba(0,0,0,0.08)' }]}>
+                                        <Text style={[styles.filterCountText, isActive && { color:f.activeColor }]}>
                                             {counts[f.key]}
                                         </Text>
                                     </View>
@@ -157,9 +155,8 @@ export default function TasksScreen() {
 
             <View style={styles.divider} />
 
-            {loading ? (
-                <TaskSkeleton />
-            ) : (
+            {/* ── Liste ── */}
+            {loading ? <TaskSkeleton /> : (
                 <FlatList
                     data={filtered}
                     keyExtractor={item => item.id.toString()}
@@ -168,48 +165,50 @@ export default function TasksScreen() {
                     ListEmptyComponent={(
                         <View style={styles.emptyState}>
                             <View style={styles.emptyIcon}>
-                                <Text style={{ fontSize: 20, color: COLORS.textLight }}>✓</Text>
+                                <Text style={{ fontSize:22, color:COLORS.textLight }}>✓</Text>
                             </View>
                             <Text style={styles.emptyTitle}>Aucune tâche</Text>
                             <Text style={styles.emptySub}>
-                                {filter === 'tous' ? 'Aucune tâche assignée.' : 'Aucune tâche dans cette catégorie.'}
+                                {filter === 'tous' ? 'Aucune tâche assignée pour le moment.' : 'Aucune tâche dans cette catégorie.'}
                             </Text>
                         </View>
                     )}
                     renderItem={({ item }) => {
                         const conf = STATUT_CONFIG[item.statut];
                         return (
-                            <View style={[styles.card, { borderLeftColor: conf?.color ?? COLORS.border }]}>
+                            <View style={[styles.card, { borderLeftColor: conf?.dot ?? COLORS.border }]}>
 
-                                {/* Projet + badge */}
+                                {/* Top : projet + badge */}
                                 <View style={styles.cardTop}>
                                     <View style={styles.projectRow}>
-                                        <Text style={styles.projectIcon}>◫</Text>
+                                        <View style={styles.projectDot} />
                                         <Text style={styles.projectLabel} numberOfLines={1}>
                                             {item.project?.titre ?? item.projectTitre ?? 'Projet'}
                                         </Text>
                                     </View>
                                     {conf && (
-                                        <View style={[styles.statut, { backgroundColor: conf.bg, borderColor: conf.border }]}>
-                                            <Text style={[styles.statutText, { color: conf.color }]}>{conf.label}</Text>
+                                        <View style={[styles.badge, { backgroundColor:conf.bg, borderColor:conf.border }]}>
+                                            <Text style={[styles.badgeText, { color:conf.color }]}>{conf.label}</Text>
                                         </View>
                                     )}
                                 </View>
 
                                 {/* Titre */}
                                 <Text style={styles.taskTitle}>{item.titre}</Text>
-
-                                {item.description ? (
+                                {item.description && (
                                     <Text style={styles.taskDesc} numberOfLines={2}>{item.description}</Text>
-                                ) : null}
+                                )}
 
                                 {/* Échéance */}
                                 {item.date_echeance && (
                                     <View style={styles.echeanceRow}>
-                                        <Text style={styles.echeanceIcon}>○</Text>
+                                        <View style={styles.echeanceDot} />
                                         <Text style={styles.echeanceText}>Échéance : {item.date_echeance}</Text>
                                     </View>
                                 )}
+
+                                {/* Divider */}
+                                <View style={styles.cardDivider} />
 
                                 {/* Boutons statut */}
                                 <View style={styles.statutBtns}>
@@ -227,12 +226,12 @@ export default function TasksScreen() {
                                                 activeOpacity={isActive ? 1 : 0.7}
                                             >
                                                 {isActive && (
-                                                    <Text style={[styles.checkMark, { color: c.color }]}>✓ </Text>
+                                                    <Text style={[styles.statutCheck, { color:c.color }]}>✓ </Text>
                                                 )}
                                                 <Text style={[
                                                     styles.statutBtnText,
                                                     { color: isActive ? c.color : COLORS.textLight },
-                                                    isActive && { fontWeight: '700' },
+                                                    isActive && { fontWeight:'700' },
                                                 ]}>
                                                     {c.label}
                                                 </Text>
@@ -250,76 +249,71 @@ export default function TasksScreen() {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: COLORS.bg },
+    safe: { flex:1, backgroundColor:COLORS.bg },
 
     header: {
-        flexDirection: 'row', justifyContent: 'space-between',
-        alignItems: 'flex-start', paddingHorizontal: 20,
-        paddingTop: 16, paddingBottom: 12,
+        flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start',
+        paddingHorizontal:20, paddingTop:18, paddingBottom:14,
     },
-    title: { fontSize: 22, fontWeight: '700', color: COLORS.text, letterSpacing: -0.5, marginBottom: 2 },
-    subtitle: { fontSize: 13, color: COLORS.textLight },
+    title:    { fontSize:23, fontWeight:'700', color:COLORS.text, letterSpacing:-0.6, marginBottom:3 },
+    subtitle: { fontSize:13, color:COLORS.textLight },
+    totalPill: {
+        backgroundColor:COLORS.white, borderWidth:1, borderColor:COLORS.border,
+        borderRadius:20, paddingHorizontal:11, paddingVertical:5, marginTop:4,
+    },
+    totalPillText: { fontSize:13, fontWeight:'700', color:COLORS.textMuted },
 
     filterBtn: {
-        flexDirection: 'row', alignItems: 'center', gap: 5,
-        paddingHorizontal: 13, paddingVertical: 7,
-        borderRadius: 20, borderWidth: 1, borderColor: COLORS.border,
-        backgroundColor: COLORS.white,
+        flexDirection:'row', alignItems:'center', gap:6,
+        paddingHorizontal:13, paddingVertical:8,
+        borderRadius:20, borderWidth:1, borderColor:COLORS.border,
+        backgroundColor:COLORS.white,
     },
-    filterText: { fontSize: 12.5, fontWeight: '500', color: COLORS.textMuted },
-    filterCount: {
-        backgroundColor: COLORS.borderLight,
-        paddingHorizontal: 6, paddingVertical: 1, borderRadius: 10,
-    },
-    filterCountText: { fontSize: 11, fontWeight: '600', color: COLORS.textMuted },
+    filterDot:       { width:6, height:6, borderRadius:3 },
+    filterText:      { fontSize:12.5, fontWeight:'500', color:COLORS.textMuted },
+    filterCount:     { backgroundColor:COLORS.borderLight, paddingHorizontal:7, paddingVertical:1, borderRadius:10 },
+    filterCountText: { fontSize:11, fontWeight:'600', color:COLORS.textMuted },
 
-    divider: { height: 1, backgroundColor: COLORS.borderLight },
-    list: { padding: 16, gap: 10, paddingBottom: 32 },
+    divider: { height:1, backgroundColor:COLORS.borderLight },
+    list:    { padding:16, gap:10, paddingBottom:36 },
 
     card: {
-        backgroundColor: COLORS.white, borderRadius: 12,
-        padding: 14, borderWidth: 1, borderColor: COLORS.border,
-        borderLeftWidth: 3,
+        backgroundColor:COLORS.white, borderRadius:14,
+        padding:14, borderWidth:1, borderColor:COLORS.border,
+        borderLeftWidth:3,
+        shadowColor:'#0F172A', shadowOpacity:0.04,
+        shadowRadius:8, shadowOffset:{ width:0, height:2 }, elevation:2,
     },
-    cardTop: {
-        flexDirection: 'row', justifyContent: 'space-between',
-        alignItems: 'center', marginBottom: 8,
-    },
-    projectRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
-    projectIcon: { fontSize: 11, color: COLORS.textLight },
-    projectLabel: { fontSize: 12, color: COLORS.textLight, fontWeight: '500', flex: 1 },
-    statut: {
-        paddingHorizontal: 9, paddingVertical: 3,
-        borderRadius: 20, borderWidth: 1, flexShrink: 0,
-    },
-    statutText: { fontSize: 11, fontWeight: '600' },
-    taskTitle: {
-        fontSize: 15, fontWeight: '700', color: COLORS.text,
-        letterSpacing: -0.2, marginBottom: 4,
-    },
-    taskDesc: { fontSize: 13, color: COLORS.textMuted, lineHeight: 18, marginBottom: 8 },
-    echeanceRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },
-    echeanceIcon: { fontSize: 11, color: COLORS.textLight },
-    echeanceText: { fontSize: 12, color: COLORS.textLight },
+    cardTop:     { flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:9 },
+    projectRow:  { flexDirection:'row', alignItems:'center', gap:6, flex:1 },
+    projectDot:  { width:5, height:5, borderRadius:3, backgroundColor:COLORS.textLight },
+    projectLabel:{ fontSize:12, color:COLORS.textLight, fontWeight:'500', flex:1 },
+    badge:       { paddingHorizontal:9, paddingVertical:3, borderRadius:20, borderWidth:1, flexShrink:0 },
+    badgeText:   { fontSize:11, fontWeight:'600' },
 
-    statutBtns: {
-        flexDirection: 'row', gap: 6, marginTop: 8,
-        borderTopWidth: 1, borderTopColor: COLORS.borderLight, paddingTop: 12,
-    },
+    taskTitle: { fontSize:15, fontWeight:'700', color:COLORS.text, letterSpacing:-0.2, marginBottom:4 },
+    taskDesc:  { fontSize:13, color:COLORS.textMuted, lineHeight:19, marginBottom:8 },
+
+    echeanceRow: { flexDirection:'row', alignItems:'center', gap:6, marginBottom:12 },
+    echeanceDot: { width:5, height:5, borderRadius:3, backgroundColor:COLORS.textLight },
+    echeanceText:{ fontSize:12, color:COLORS.textLight },
+
+    cardDivider: { height:1, backgroundColor:COLORS.borderLight, marginBottom:12 },
+
+    statutBtns: { flexDirection:'row', gap:6 },
     statutBtn: {
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 8, borderRadius: 8, borderWidth: 1,
-        backgroundColor: COLORS.white,
+        flex:1, flexDirection:'row', alignItems:'center', justifyContent:'center',
+        paddingVertical:9, borderRadius:9, borderWidth:1, backgroundColor:COLORS.white,
     },
-    checkMark: { fontSize: 11, fontWeight: '700' },
-    statutBtnText: { fontSize: 11.5, fontWeight: '500' },
+    statutCheck:    { fontSize:11, fontWeight:'700' },
+    statutBtnText:  { fontSize:11.5, fontWeight:'500' },
 
-    emptyState: { alignItems: 'center', paddingTop: 60 },
+    emptyState: { alignItems:'center', paddingTop:64 },
     emptyIcon: {
-        width: 52, height: 52, borderRadius: 14,
-        backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
-        alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+        width:56, height:56, borderRadius:16,
+        backgroundColor:COLORS.white, borderWidth:1, borderColor:COLORS.border,
+        alignItems:'center', justifyContent:'center', marginBottom:14,
     },
-    emptyTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
-    emptySub: { fontSize: 13, color: COLORS.textLight },
+    emptyTitle: { fontSize:16, fontWeight:'700', color:COLORS.text, marginBottom:5 },
+    emptySub:   { fontSize:13.5, color:COLORS.textLight, textAlign:'center', paddingHorizontal:32 },
 });

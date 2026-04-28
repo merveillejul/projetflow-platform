@@ -7,35 +7,35 @@ import Svg, { G, Path, Text as SvgText, Circle } from 'react-native-svg';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-// ─── Palette cohérente avec la version web ───────────────────────────────────
 const COLORS = {
-    bg:          '#f8fafc',
-    white:       '#ffffff',
-    border:      '#e2e8f0',
-    borderLight: '#f1f5f9',
-    text:        '#0f172a',
-    textMuted:   '#64748b',
-    textLight:   '#94a3b8',
-    blue:        '#3b82f6',
-    blueBg:      '#eff6ff',
-    green:       '#10b981',
-    greenBg:     '#f0fdf4',
-    amber:       '#f59e0b',
-    amberBg:     '#fffbeb',
-    purple:      '#6366f1',
-    purpleBg:    '#eef2ff',
+    bg:          '#F8FAFC',
+    white:       '#FFFFFF',
+    border:      '#E2E8F0',
+    borderLight: '#F1F5F9',
+    text:        '#0F172A',
+    textMuted:   '#64748B',
+    textLight:   '#94A3B8',
+    primary:     '#0F172A',
+    // Accents
+    indigo:      '#6366F1',
+    indigoBg:    '#EEF2FF',
+    green:       '#10B981',
+    greenBg:     '#ECFDF5',
+    amber:       '#F59E0B',
+    amberBg:     '#FFFBEB',
+    blue:        '#3B82F6',
+    blueBg:      '#EFF6FF',
 };
 
 const STATUT_COLORS = {
-    todo:     { color: COLORS.amber,  bg: COLORS.amberBg,  label: 'À faire' },
-    progress: { color: COLORS.blue,   bg: COLORS.blueBg,   label: 'En cours' },
-    done:     { color: COLORS.green,  bg: COLORS.greenBg,  label: 'Terminé' },
+    todo:     { color: COLORS.amber,  bg: COLORS.amberBg,  label: 'À faire'  },
+    progress: { color: COLORS.indigo, bg: COLORS.indigoBg, label: 'En cours' },
+    done:     { color: COLORS.green,  bg: COLORS.greenBg,  label: 'Terminé'  },
 };
 
-// ─── Skeleton loader ──────────────────────────────────────────────────────────
+/* ─── Skeleton ──────────────────────────────────────────────────── */
 function SkeletonBox({ width, height, radius = 8, style }) {
     const opacity = React.useRef(new Animated.Value(0.4)).current;
-
     React.useEffect(() => {
         Animated.loop(
             Animated.sequence([
@@ -44,37 +44,34 @@ function SkeletonBox({ width, height, radius = 8, style }) {
             ])
         ).start();
     }, []);
-
-    return (
-        <Animated.View style={[{ width, height, borderRadius: radius, backgroundColor: '#e2e8f0', opacity }, style]} />
-    );
+    return <Animated.View style={[{ width, height, borderRadius: radius, backgroundColor: '#E2E8F0', opacity }, style]} />;
 }
 
 function DashboardSkeleton() {
     return (
-        <View style={{ padding: 20 }}>
-            <SkeletonBox width={180} height={28} style={{ marginBottom: 6 }} />
-            <SkeletonBox width={100} height={18} style={{ marginBottom: 28 }} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-                {[0,1,2,3].map(i => <SkeletonBox key={i} width="47%" height={90} style={{ flexGrow: 1 }} />)}
+        <View style={{ padding: 20, gap: 14 }}>
+            <SkeletonBox width={180} height={28} />
+            <SkeletonBox width={120} height={18} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8 }}>
+                {[0,1,2,3].map(i => <SkeletonBox key={i} width="47%" height={96} style={{ flexGrow: 1 }} />)}
             </View>
+            <SkeletonBox width="100%" height={100} />
             <SkeletonBox width="100%" height={280} />
         </View>
     );
 }
 
-// ─── Donut chart ──────────────────────────────────────────────────────────────
+/* ─── Donut chart ────────────────────────────────────────────────── */
 function DonutChart({ data, total }) {
-    const SIZE   = 200;
-    const cx     = SIZE / 2;
-    const cy     = SIZE / 2;
-    const R      = 72;
-    const r      = 46;  // rayon intérieur du donut
+    const SIZE = 200;
+    const cx = SIZE / 2, cy = SIZE / 2;
+    const R = 74, r = 48;
+    const GAP = 0.03;
 
     if (total === 0) return (
         <View style={styles.emptyChart}>
             <View style={styles.emptyChartIcon}>
-                <Text style={{ fontSize: 20, color: COLORS.textLight }}>○</Text>
+                <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: COLORS.textLight }} />
             </View>
             <Text style={styles.emptyText}>Aucune tâche pour le moment</Text>
         </View>
@@ -82,27 +79,17 @@ function DonutChart({ data, total }) {
 
     let startAngle = -Math.PI / 2;
     const slices = data.filter(d => d.value > 0).map(d => {
-        const angle    = (d.value / total) * 2 * Math.PI;
+        const angle    = (d.value / total) * 2 * Math.PI - GAP;
         const endAngle = startAngle + angle;
-
         const x1 = cx + R * Math.cos(startAngle);
         const y1 = cy + R * Math.sin(startAngle);
         const x2 = cx + R * Math.cos(endAngle);
         const y2 = cy + R * Math.sin(endAngle);
-
-        // points intérieurs pour le donut
         const ix1 = cx + r * Math.cos(endAngle);
         const iy1 = cy + r * Math.sin(endAngle);
         const ix2 = cx + r * Math.cos(startAngle);
         const iy2 = cy + r * Math.sin(startAngle);
-
-        const largeArc  = angle > Math.PI ? 1 : 0;
-        const midAngle  = startAngle + angle / 2;
-        const lx        = cx + (R * 0.72) * Math.cos(midAngle);
-        const ly        = cy + (R * 0.72) * Math.sin(midAngle);
-        const pct       = Math.round((d.value / total) * 100);
-
-        // Path donut : arc extérieur + arc intérieur inversé
+        const largeArc = angle > Math.PI ? 1 : 0;
         const path = [
             `M ${x1} ${y1}`,
             `A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2}`,
@@ -110,35 +97,19 @@ function DonutChart({ data, total }) {
             `A ${r} ${r} 0 ${largeArc} 0 ${ix2} ${iy2}`,
             'Z',
         ].join(' ');
-
-        startAngle = endAngle;
-        return { ...d, path, lx, ly, pct };
+        startAngle = endAngle + GAP;
+        return { ...d, path };
     });
 
     return (
         <View style={styles.chartWrapper}>
-            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
                 <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-                    <G>
-                        {slices.map((s, i) => (
-                            <G key={i}>
-                                <Path d={s.path} fill={s.color} />
-                                {s.pct >= 10 && (
-                                    <SvgText
-                                        x={s.lx} y={s.ly + 4}
-                                        textAnchor="middle"
-                                        fontSize="11"
-                                        fontWeight="700"
-                                        fill="white"
-                                    >
-                                        {s.pct}%
-                                    </SvgText>
-                                )}
-                            </G>
-                        ))}
-                    </G>
+                    {slices.map((s, i) => (
+                        <Path key={i} d={s.path} fill={s.color} />
+                    ))}
                 </Svg>
-                {/* Label central */}
+                {/* Centre absolu */}
                 <View style={styles.donutCenter} pointerEvents="none">
                     <Text style={styles.donutTotal}>{total}</Text>
                     <Text style={styles.donutLabel}>tâches</Text>
@@ -153,6 +124,7 @@ function DonutChart({ data, total }) {
                         <View key={i} style={styles.legendItem}>
                             <View style={[styles.legendDot, { backgroundColor: s.color }]} />
                             <Text style={styles.legendName}>{s.name}</Text>
+                            <Text style={styles.legendVal}>{s.value}</Text>
                             <View style={[styles.legendPill, { backgroundColor: s.bg }]}>
                                 <Text style={[styles.legendPct, { color: s.color }]}>{pct}%</Text>
                             </View>
@@ -164,45 +136,38 @@ function DonutChart({ data, total }) {
     );
 }
 
-// ─── Card métrique ────────────────────────────────────────────────────────────
+/* ─── Stat card ─────────────────────────────────────────────────── */
 function StatCard({ label, value, accent, bg, icon }) {
     return (
-        <View style={[styles.card, { borderTopColor: accent, borderTopWidth: 3 }]}>
+        <View style={[styles.card, styles.statCard, { borderTopColor: accent, borderTopWidth: 3 }]}>
             <View style={styles.cardHeader}>
                 <Text style={styles.cardLabel}>{label}</Text>
                 <View style={[styles.cardIconBox, { backgroundColor: bg }]}>
-                    <Text style={{ fontSize: 14, color: accent }}>{icon}</Text>
+                    <Text style={{ fontSize: 13, color: accent }}>{icon}</Text>
                 </View>
             </View>
-            <Text style={[styles.cardNum, { color: COLORS.text }]}>{value}</Text>
+            <Text style={styles.cardNum}>{value}</Text>
         </View>
     );
 }
 
-// ─── Progress bar de complétion ───────────────────────────────────────────────
+/* ─── Completion bar ─────────────────────────────────────────────── */
 function CompletionBar({ done, total }) {
     const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const barColor = pct === 100 ? COLORS.green : COLORS.primary;
     return (
-        <View style={styles.completionCard}>
-            <View style={styles.completionHeader}>
+        <View style={[styles.card, styles.completionCard]}>
+            <View style={styles.completionTop}>
                 <View style={styles.completionLeft}>
                     <View style={[styles.cardIconBox, { backgroundColor: COLORS.greenBg }]}>
-                        <Text style={{ fontSize: 14, color: COLORS.green }}>✓</Text>
+                        <Text style={{ fontSize: 13, color: COLORS.green }}>✓</Text>
                     </View>
                     <Text style={styles.completionTitle}>Progression globale</Text>
                 </View>
-                <Text style={[styles.completionPct, { color: pct === 100 ? COLORS.green : COLORS.blue }]}>
-                    {pct}%
-                </Text>
+                <Text style={[styles.completionPct, { color: barColor }]}>{pct}%</Text>
             </View>
             <View style={styles.progressTrack}>
-                <View style={[
-                    styles.progressFill,
-                    {
-                        width: `${pct}%`,
-                        backgroundColor: pct === 100 ? COLORS.green : COLORS.blue,
-                    }
-                ]} />
+                <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: barColor }]} />
             </View>
             <Text style={styles.completionSub}>
                 {done} tâche{done !== 1 ? 's' : ''} terminée{done !== 1 ? 's' : ''} sur {total}
@@ -211,7 +176,7 @@ function CompletionBar({ done, total }) {
     );
 }
 
-// ─── Écran principal ──────────────────────────────────────────────────────────
+/* ─── Écran principal ────────────────────────────────────────────── */
 export default function DashboardScreen() {
     const { user } = useAuth();
     const [stats, setStats] = useState(null);
@@ -222,382 +187,169 @@ export default function DashboardScreen() {
             .catch(err => console.log(err));
     }, []);
 
-    const ROLE_LABELS = {
-        admin:  'Administrateur',
-        chef:   'Chef de projet',
-        membre: 'Membre',
-    };
-    const ROLE_COLORS = {
-        admin:  COLORS.amber,
-        chef:   COLORS.blue,
-        membre: COLORS.green,
-    };
+    const ROLE_LABELS  = { admin:'Administrateur', chef:'Chef de projet', membre:'Membre' };
+    const ROLE_COLORS  = { admin:COLORS.amber, chef:COLORS.primary, membre:COLORS.green };
+    const ROLE_BG      = { admin:COLORS.amberBg, chef:COLORS.borderLight, membre:COLORS.greenBg };
 
     const roleLabel = ROLE_LABELS[user?.role] ?? user?.role;
     const roleColor = ROLE_COLORS[user?.role] ?? COLORS.textMuted;
-    const roleBg    = { admin: COLORS.amberBg, chef: COLORS.blueBg, membre: COLORS.greenBg }[user?.role] ?? '#f1f5f9';
+    const roleBg    = ROLE_BG[user?.role] ?? '#F1F5F9';
 
-    const totalTaches = stats
-        ? (stats.todo ?? 0) + (stats.progress ?? 0) + (stats.done ?? 0)
-        : 0;
+    const total = stats ? (stats.todo ?? 0) + (stats.progress ?? 0) + (stats.done ?? 0) : 0;
 
     const pieData = stats ? [
-        { name: 'À faire',  value: stats.todo     ?? 0, color: COLORS.amber, bg: COLORS.amberBg },
-        { name: 'En cours', value: stats.progress  ?? 0, color: COLORS.blue,  bg: COLORS.blueBg  },
-        { name: 'Terminé',  value: stats.done      ?? 0, color: COLORS.green, bg: COLORS.greenBg },
+        { name:'À faire',  value: stats.todo     ?? 0, color: COLORS.amber,  bg: COLORS.amberBg  },
+        { name:'En cours', value: stats.progress  ?? 0, color: COLORS.indigo, bg: COLORS.indigoBg },
+        { name:'Terminé',  value: stats.done      ?? 0, color: COLORS.green,  bg: COLORS.greenBg  },
     ] : [];
 
     const STAT_CARDS = stats ? [
-        { label: 'Projets',   value: stats.projects ?? 0, accent: COLORS.purple, bg: COLORS.purpleBg, icon: '◫' },
-        { label: 'À faire',   value: stats.todo     ?? 0, accent: COLORS.amber,  bg: COLORS.amberBg,  icon: '○' },
-        { label: 'En cours',  value: stats.progress ?? 0, accent: COLORS.blue,   bg: COLORS.blueBg,   icon: '↺' },
-        { label: 'Terminées', value: stats.done     ?? 0, accent: COLORS.green,  bg: COLORS.greenBg,  icon: '✓' },
+        { label:'Projets',   value: stats.projects ?? 0, accent: COLORS.indigo, bg: COLORS.indigoBg, icon:'◫' },
+        { label:'À faire',   value: stats.todo     ?? 0, accent: COLORS.amber,  bg: COLORS.amberBg,  icon:'○' },
+        { label:'En cours',  value: stats.progress ?? 0, accent: COLORS.primary,bg:'#F1F5F9',        icon:'↺' },
+        { label:'Terminées', value: stats.done     ?? 0, accent: COLORS.green,  bg: COLORS.greenBg,  icon:'✓' },
     ] : [];
+
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
 
     return (
         <SafeAreaView style={styles.safe}>
-            <ScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.content}
-                showsVerticalScrollIndicator={false}
-            >
+            <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
                 {/* ── HEADER ── */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
-                        <Text style={styles.greeting}>
-                            Bonjour,
-                        </Text>
-                        <Text style={styles.userName} numberOfLines={1}>
-                            {user?.nom} 👋
-                        </Text>
+                        <Text style={styles.greeting}>{greeting},</Text>
+                        <Text style={styles.userName} numberOfLines={1}>{user?.nom} 👋</Text>
                         <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
                             <View style={[styles.roleDot, { backgroundColor: roleColor }]} />
                             <Text style={[styles.roleText, { color: roleColor }]}>{roleLabel}</Text>
                         </View>
                     </View>
                     <View style={[styles.avatar, { backgroundColor: roleColor }]}>
-                        <Text style={styles.avatarText}>
-                            {user?.nom?.charAt(0).toUpperCase()}
-                        </Text>
+                        <Text style={styles.avatarText}>{user?.nom?.charAt(0).toUpperCase()}</Text>
                     </View>
                 </View>
 
                 {/* ── CONTENU ── */}
-                {!stats ? (
-                    <DashboardSkeleton />
-                ) : (
+                {!stats ? <DashboardSkeleton /> : (
                     <>
                         {/* STAT CARDS */}
                         <View style={styles.cardsGrid}>
-                            {STAT_CARDS.map((card, i) => (
-                                <StatCard key={i} {...card} />
-                            ))}
+                            {STAT_CARDS.map((card, i) => <StatCard key={i} {...card} />)}
                         </View>
 
                         {/* PROGRESSION */}
-                        <CompletionBar done={stats.done ?? 0} total={totalTaches} />
+                        <CompletionBar done={stats.done ?? 0} total={total} />
 
                         {/* DONUT */}
-                        <View style={styles.chartCard}>
-                            <View style={styles.chartCardHeader}>
+                        <View style={[styles.card, styles.chartCard]}>
+                            <View style={styles.chartHead}>
                                 <View>
                                     <Text style={styles.chartTitle}>Répartition des tâches</Text>
                                     <Text style={styles.chartSub}>Distribution par statut</Text>
                                 </View>
-                                {totalTaches > 0 && (
+                                {total > 0 && (
                                     <View style={styles.totalPill}>
-                                        <View style={[styles.roleDot, { backgroundColor: COLORS.blue }]} />
-                                        <Text style={styles.totalPillText}>{totalTaches} tâches</Text>
+                                        <View style={[styles.roleDot, { backgroundColor: COLORS.indigo }]} />
+                                        <Text style={styles.totalPillText}>{total} tâches</Text>
                                     </View>
                                 )}
                             </View>
                             <View style={styles.chartDivider} />
-                            <DonutChart data={pieData} total={totalTaches} />
+                            <DonutChart data={pieData} total={total} />
                         </View>
                     </>
                 )}
+
             </ScrollView>
         </SafeAreaView>
     );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-    safe: {
-        flex: 1,
-        backgroundColor: COLORS.bg,
-    },
-    scroll: {
-        flex: 1,
-    },
-    content: {
-        padding: 20,
-        paddingBottom: 40,
-    },
+    safe:    { flex: 1, backgroundColor: COLORS.bg },
+    scroll:  { flex: 1 },
+    content: { padding: 20, paddingBottom: 44 },
 
-    // Header
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 24,
-        marginTop: 8,
-    },
-    headerLeft: {
-        flex: 1,
-        marginRight: 12,
-    },
-    greeting: {
-        fontSize: 14,
-        color: COLORS.textMuted,
-        fontWeight: '400',
-        marginBottom: 2,
-    },
-    userName: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: COLORS.text,
-        letterSpacing: -0.5,
-        marginBottom: 8,
-    },
-    rolePill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5,
-        alignSelf: 'flex-start',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 20,
-    },
-    roleDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-    },
-    roleText: {
-        fontSize: 12,
-        fontWeight: '600',
-    },
+    /* Header */
+    header:     { flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start', marginBottom:28, marginTop:8 },
+    headerLeft: { flex:1, marginRight:12 },
+    greeting:   { fontSize:14, color:COLORS.textMuted, fontWeight:'400', marginBottom:3 },
+    userName:   { fontSize:23, fontWeight:'700', color:COLORS.text, letterSpacing:-0.6, marginBottom:10 },
+    rolePill:   { flexDirection:'row', alignItems:'center', gap:6, alignSelf:'flex-start', paddingHorizontal:11, paddingVertical:5, borderRadius:20 },
+    roleDot:    { width:6, height:6, borderRadius:3 },
+    roleText:   { fontSize:12, fontWeight:'600' },
     avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
+        width:46, height:46, borderRadius:13,
+        alignItems:'center', justifyContent:'center',
+        shadowColor:'#0F172A', shadowOpacity:0.15,
+        shadowRadius:8, shadowOffset:{ width:0, height:2 }, elevation:3,
     },
-    avatarText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '700',
-    },
+    avatarText: { color:'white', fontSize:19, fontWeight:'700' },
 
-    // Cards
-    cardsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-        marginBottom: 12,
-    },
+    /* Card base */
     card: {
         backgroundColor: COLORS.white,
-        borderRadius: 12,
-        padding: 14,
-        width: '47.5%',
-        flexGrow: 1,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: COLORS.border,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    cardLabel: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-        fontWeight: '500',
-    },
-    cardIconBox: {
-        width: 28,
-        height: 28,
-        borderRadius: 7,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    cardNum: {
-        fontSize: 28,
-        fontWeight: '700',
-        letterSpacing: -0.5,
+        shadowColor: '#0F172A',
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        shadowOffset: { width:0, height:2 },
+        elevation: 2,
     },
 
-    // Completion bar
-    completionCard: {
-        backgroundColor: COLORS.white,
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    completionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    completionLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    completionTitle: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: COLORS.text,
-    },
-    completionPct: {
-        fontSize: 15,
-        fontWeight: '700',
-        letterSpacing: -0.3,
-    },
-    progressTrack: {
-        height: 7,
-        backgroundColor: COLORS.borderLight,
-        borderRadius: 10,
-        overflow: 'hidden',
-        marginBottom: 8,
-    },
-    progressFill: {
-        height: '100%',
-        borderRadius: 10,
-        minWidth: 4,
-    },
-    completionSub: {
-        fontSize: 12,
-        color: COLORS.textLight,
-    },
+    /* Stat cards */
+    cardsGrid: { flexDirection:'row', flexWrap:'wrap', gap:12, marginBottom:12 },
+    statCard:  { padding:16, width:'47.5%', flexGrow:1 },
+    cardHeader:  { flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:12 },
+    cardLabel:   { fontSize:12, color:COLORS.textMuted, fontWeight:'500' },
+    cardIconBox: { width:30, height:30, borderRadius:8, alignItems:'center', justifyContent:'center' },
+    cardNum:     { fontSize:30, fontWeight:'700', color:COLORS.text, letterSpacing:-0.8 },
 
-    // Chart
-    chartCard: {
-        backgroundColor: COLORS.white,
-        borderRadius: 12,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        marginBottom: 12,
-    },
-    chartCardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 4,
-    },
-    chartTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: COLORS.text,
-        letterSpacing: -0.2,
-        marginBottom: 2,
-    },
-    chartSub: {
-        fontSize: 12,
-        color: COLORS.textLight,
-    },
-    chartDivider: {
-        height: 1,
-        backgroundColor: COLORS.borderLight,
-        marginVertical: 14,
-    },
+    /* Completion */
+    completionCard:  { padding:16, marginBottom:12 },
+    completionTop:   { flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:14 },
+    completionLeft:  { flexDirection:'row', alignItems:'center', gap:9 },
+    completionTitle: { fontSize:13.5, fontWeight:'600', color:COLORS.text },
+    completionPct:   { fontSize:16, fontWeight:'700', letterSpacing:-0.3 },
+    progressTrack:   { height:7, backgroundColor:COLORS.borderLight, borderRadius:10, overflow:'hidden', marginBottom:8 },
+    progressFill:    { height:'100%', borderRadius:10, minWidth:4 },
+    completionSub:   { fontSize:12, color:COLORS.textLight },
+
+    /* Chart */
+    chartCard:    { padding:20, marginBottom:12 },
+    chartHead:    { flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start', marginBottom:4 },
+    chartTitle:   { fontSize:14.5, fontWeight:'700', color:COLORS.text, letterSpacing:-0.2, marginBottom:3 },
+    chartSub:     { fontSize:12, color:COLORS.textLight },
+    chartDivider: { height:1, backgroundColor:COLORS.borderLight, marginVertical:14 },
     totalPill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5,
-        backgroundColor: '#f8fafc',
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        borderRadius: 20,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+        flexDirection:'row', alignItems:'center', gap:5,
+        backgroundColor:'#F8FAFC', borderWidth:1, borderColor:COLORS.border,
+        borderRadius:20, paddingHorizontal:10, paddingVertical:5,
     },
-    totalPillText: {
-        fontSize: 11.5,
-        color: '#475569',
-        fontWeight: '500',
-    },
-    chartWrapper: {
-        alignItems: 'center',
-    },
-    donutCenter: {
-        position: 'absolute',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    donutTotal: {
-        fontSize: 26,
-        fontWeight: '700',
-        color: COLORS.text,
-        letterSpacing: -0.5,
-    },
-    donutLabel: {
-        fontSize: 11,
-        color: COLORS.textLight,
-        fontWeight: '500',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginTop: 1,
-    },
+    totalPillText: { fontSize:12, color:COLORS.textMuted, fontWeight:'500' },
 
-    // Légende
-    legend: {
-        width: '100%',
-        marginTop: 16,
-        gap: 10,
-    },
-    legendItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    legendDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-    },
-    legendName: {
-        flex: 1,
-        fontSize: 13,
-        color: COLORS.textMuted,
-        fontWeight: '500',
-    },
-    legendPill: {
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 20,
-    },
-    legendPct: {
-        fontSize: 11.5,
-        fontWeight: '700',
-    },
+    /* Donut */
+    chartWrapper: { alignItems:'center' },
+    donutCenter:  { position:'absolute', alignItems:'center', justifyContent:'center', top:0, bottom:0, left:0, right:0 },
+    donutTotal:   { fontSize:28, fontWeight:'700', color:COLORS.text, letterSpacing:-0.8 },
+    donutLabel:   { fontSize:11, color:COLORS.textLight, fontWeight:'600', textTransform:'uppercase', letterSpacing:0.6, marginTop:2 },
 
-    // État vide
-    emptyChart: {
-        alignItems: 'center',
-        paddingVertical: 32,
-    },
-    emptyChartIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        backgroundColor: '#f8fafc',
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 10,
-    },
-    emptyText: {
-        fontSize: 13.5,
-        color: COLORS.textLight,
-    },
+    /* Legend */
+    legend:     { width:'100%', marginTop:20, gap:11 },
+    legendItem: { flexDirection:'row', alignItems:'center', gap:9 },
+    legendDot:  { width:8, height:8, borderRadius:4 },
+    legendName: { flex:1, fontSize:13, color:COLORS.textMuted, fontWeight:'500' },
+    legendVal:  { fontSize:13, fontWeight:'700', color:COLORS.text, marginRight:6 },
+    legendPill: { paddingHorizontal:8, paddingVertical:3, borderRadius:20 },
+    legendPct:  { fontSize:11.5, fontWeight:'700' },
+
+    /* Empty */
+    emptyChart:     { alignItems:'center', paddingVertical:36 },
+    emptyChartIcon: { width:44, height:44, borderRadius:12, backgroundColor:'#F8FAFC', borderWidth:1, borderColor:COLORS.border, alignItems:'center', justifyContent:'center', marginBottom:12 },
+    emptyText:      { fontSize:13.5, color:COLORS.textLight },
 });

@@ -1,48 +1,85 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, ActivityIndicator, Modal
+    ScrollView, Modal, SafeAreaView, Animated, Easing,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../services/api';
 
+const COLORS = {
+    bg:          '#F8FAFC',
+    white:       '#FFFFFF',
+    border:      '#E2E8F0',
+    borderLight: '#F1F5F9',
+    text:        '#0F172A',
+    textMuted:   '#64748B',
+    textLight:   '#94A3B8',
+    primary:     '#0F172A',
+    indigo:      '#6366F1',
+    indigoBg:    '#EEF2FF',
+    indigoBorder:'#C7D2FE',
+    green:       '#10B981',
+    greenBg:     '#ECFDF5',
+    greenBorder: '#A7F3D0',
+    amber:       '#F59E0B',
+    amberBg:     '#FFFBEB',
+    amberBorder: '#FDE68A',
+};
+
 const STATUT_CONFIG = {
-    a_faire:  { label: "À faire",  color: "#f59e0b", bg: "#fffbeb" },
-    en_cours: { label: "En cours", color: "#3b82f6", bg: "#eff6ff" },
-    termine:  { label: "Terminé",  color: "#10b981", bg: "#f0fdf4" },
+    a_faire:  { label:'À faire',  color:COLORS.amber,  bg:COLORS.amberBg,  border:COLORS.amberBorder,  dot:'#F59E0B' },
+    en_cours: { label:'En cours', color:COLORS.indigo, bg:COLORS.indigoBg, border:COLORS.indigoBorder, dot:'#6366F1' },
+    termine:  { label:'Terminé',  color:COLORS.green,  bg:COLORS.greenBg,  border:COLORS.greenBorder,  dot:'#10B981' },
 };
 
 const MONTHS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const DAYS   = ["L","M","M","J","V","S","D"];
+
+function SkeletonBox({ width, height, radius=8, style }) {
+    const opacity = React.useRef(new Animated.Value(0.4)).current;
+    React.useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(opacity, { toValue:1,   duration:700, useNativeDriver:true, easing:Easing.inOut(Easing.ease) }),
+                Animated.timing(opacity, { toValue:0.4, duration:700, useNativeDriver:true, easing:Easing.inOut(Easing.ease) }),
+            ])
+        ).start();
+    }, []);
+    return <Animated.View style={[{ width, height, borderRadius:radius, backgroundColor:'#E2E8F0', opacity }, style]} />;
+}
+
+function PlanningSkeleton() {
+    return (
+        <View style={{ padding:16, gap:14 }}>
+            <SkeletonBox width="60%" height={24} />
+            <SkeletonBox width="40%" height={16} />
+            <SkeletonBox width="100%" height={340} radius={14} />
+        </View>
+    );
+}
 
 export default function PlanningScreen() {
     const [allTasks, setAllTasks]         = useState([]);
     const [loading, setLoading]           = useState(true);
     const [current, setCurrent]           = useState(new Date());
     const [selected, setSelected]         = useState(null);
-    const [filterStatut, setFilterStatut] = useState("tous");
+    const [filterStatut, setFilterStatut] = useState('tous');
     const today = new Date();
 
     useEffect(() => {
-        const load = async () => {
+        (async () => {
             try {
-                const projRes  = await API.get('/projects');
-                const projects = projRes.data;
-                const arrays   = await Promise.all(
+                const { data: projects } = await API.get('/projects');
+                const arrays = await Promise.all(
                     projects.map(p =>
                         API.get(`/projects/${p.id}/tasks`)
-                           .then(r => r.data.map(t => ({ ...t, projectTitre: p.titre, projectId: p.id })))
-                           .catch(() => [])
+                            .then(r => r.data.map(t => ({ ...t, projectTitre:p.titre, projectId:p.id })))
+                            .catch(() => [])
                     )
                 );
                 setAllTasks(arrays.flat().filter(t => t && t.date_echeance));
-            } catch (err) {
-                console.log(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        load();
+            } catch (err) { console.log(err); }
+            finally { setLoading(false); }
+        })();
     }, []);
 
     const year  = current.getFullYear();
@@ -55,123 +92,175 @@ export default function PlanningScreen() {
 
     const days = [];
     for (let i = startDow - 1; i >= 0; i--)
-        days.push({ date: new Date(year, month, -i), current: false });
+        days.push({ date:new Date(year, month, -i), current:false });
     for (let i = 1; i <= lastDay.getDate(); i++)
-        days.push({ date: new Date(year, month, i), current: true });
+        days.push({ date:new Date(year, month, i), current:true });
     while (days.length < 42)
-        days.push({ date: new Date(year, month + 1, days.length - startDow - lastDay.getDate() + 1), current: false });
+        days.push({ date:new Date(year, month+1, days.length-startDow-lastDay.getDate()+1), current:false });
 
-    const filteredTasks = filterStatut === "tous"
-        ? allTasks
-        : allTasks.filter(t => t && t.statut === filterStatut);
+    const filtered = filterStatut === 'tous' ? allTasks : allTasks.filter(t => t.statut === filterStatut);
 
     const getTasksForDay = (date) =>
-        filteredTasks.filter(t => {
-            if (!t || !t.date_echeance) return false;
-            const td = new Date(t.date_echeance + "T00:00:00");
-            return td.getFullYear() === date.getFullYear() &&
-                   td.getMonth()    === date.getMonth()    &&
-                   td.getDate()     === date.getDate();
+        filtered.filter(t => {
+            if (!t?.date_echeance) return false;
+            const d = new Date(t.date_echeance + 'T00:00:00');
+            return d.getFullYear() === date.getFullYear() &&
+                   d.getMonth()    === date.getMonth()    &&
+                   d.getDate()     === date.getDate();
         });
 
-    const isToday = (date) =>
-        date.getFullYear() === today.getFullYear() &&
-        date.getMonth()    === today.getMonth()    &&
-        date.getDate()     === today.getDate();
+    const isToday   = (d) => d.toDateString() === today.toDateString();
+    const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
+    const getAssigne = (t) => t?.assignedUser?.nom || t?.assigned_user?.nom || null;
 
-    const getAssigne = (t) => {
-        if (!t) return null;
-        return t.assignedUser?.nom || t.assigned_user?.nom || null;
-    };
+    const monthTasks = allTasks.filter(t => {
+        const d = new Date(t.date_echeance + 'T00:00:00');
+        return d.getMonth() === month && d.getFullYear() === year;
+    });
+
+    const FILTERS = [
+        { key:'tous',     label:'Tous',     dot:'#94A3B8', activeBg:COLORS.primary,   activeColor:'white',        activeBorder:COLORS.primary },
+        { key:'a_faire',  label:'À faire',  dot:COLORS.amber,  activeBg:COLORS.amberBg,   activeColor:COLORS.amber,   activeBorder:COLORS.amberBorder },
+        { key:'en_cours', label:'En cours', dot:COLORS.indigo, activeBg:COLORS.indigoBg,  activeColor:COLORS.indigo,  activeBorder:COLORS.indigoBorder },
+        { key:'termine',  label:'Terminé',  dot:COLORS.green,  activeBg:COLORS.greenBg,   activeColor:COLORS.green,   activeBorder:COLORS.greenBorder },
+    ];
 
     if (loading) return (
         <SafeAreaView style={styles.safe}>
-            <View style={styles.center}>
-                <ActivityIndicator size="large" color="#1d4ed8" />
-                <Text style={styles.loadingText}>Chargement du planning...</Text>
-            </View>
+            <PlanningSkeleton />
         </SafeAreaView>
     );
 
     return (
         <SafeAreaView style={styles.safe}>
-            <ScrollView contentContainerStyle={styles.container}>
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-                {/* EN-TÊTE */}
-                <Text style={styles.title}>Planning</Text>
-                <Text style={styles.subtitle}>
-                    {allTasks.length} tâche{allTasks.length !== 1 ? "s" : ""} sur tous les projets
-                </Text>
+                {/* ── Header ── */}
+                <View style={styles.header}>
+                    <View>
+                        <Text style={styles.title}>Planning</Text>
+                        <Text style={styles.subtitle}>
+                            {monthTasks.length} tâche{monthTasks.length !== 1 ? 's' : ''} ce mois · {allTasks.length} au total
+                        </Text>
+                    </View>
+                </View>
 
-                {/* FILTRES */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersRow}>
-                    {[
-                        { val: "tous",     label: "Tous",     color: "#0f172a" },
-                        { val: "a_faire",  label: "À faire",  color: "#f59e0b" },
-                        { val: "en_cours", label: "En cours", color: "#3b82f6" },
-                        { val: "termine",  label: "Terminé",  color: "#10b981" },
-                    ].map(f => (
-                        <TouchableOpacity
-                            key={f.val}
-                            onPress={() => setFilterStatut(f.val)}
-                            style={[styles.filterBtn, filterStatut === f.val && { backgroundColor: f.color, borderColor: f.color }]}
-                        >
-                            <Text style={[styles.filterText, filterStatut === f.val && { color: "white" }]}>
-                                {f.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+                {/* ── Filtres ── */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom:14 }}>
+                    <View style={{ flexDirection:'row', gap:7, paddingHorizontal:16 }}>
+                        {FILTERS.map(f => {
+                            const isActive = filterStatut === f.key;
+                            return (
+                                <TouchableOpacity
+                                    key={f.key}
+                                    style={[
+                                        styles.filterBtn,
+                                        isActive && { backgroundColor:f.activeBg, borderColor:f.activeBorder },
+                                    ]}
+                                    onPress={() => setFilterStatut(f.key)}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={[styles.filterDot, {
+                                        backgroundColor: isActive
+                                            ? (f.key === 'tous' ? 'rgba(255,255,255,0.5)' : f.dot)
+                                            : f.dot
+                                    }]} />
+                                    <Text style={[
+                                        styles.filterText,
+                                        isActive && { color:f.activeColor, fontWeight:'700' },
+                                    ]}>
+                                        {f.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
                 </ScrollView>
 
-                {/* NAVIGATION MOIS */}
+                {/* ── Nav mois ── */}
                 <View style={styles.navRow}>
-                    <TouchableOpacity style={styles.navBtn} onPress={() => setCurrent(new Date(year, month - 1, 1))}>
-                        <Text style={styles.navBtnText}>← Préc.</Text>
+                    <TouchableOpacity
+                        style={styles.navBtn}
+                        onPress={() => setCurrent(new Date(year, month-1, 1))}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.navBtnText}>‹</Text>
                     </TouchableOpacity>
+
                     <Text style={styles.monthTitle}>{MONTHS[month]} {year}</Text>
-                    <TouchableOpacity style={styles.navBtn} onPress={() => setCurrent(new Date(year, month + 1, 1))}>
-                        <Text style={styles.navBtnText}>Suiv. →</Text>
+
+                    <TouchableOpacity
+                        style={styles.navBtn}
+                        onPress={() => setCurrent(new Date(year, month+1, 1))}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.navBtnText}>›</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.todayBtn}
+                        onPress={() => setCurrent(new Date())}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.todayBtnText}>Auj.</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* CALENDRIER */}
+                {/* ── Calendrier ── */}
                 <View style={styles.calendar}>
-                    <View style={styles.weekRow}>
+                    {/* Jours de la semaine */}
+                    <View style={styles.weekHeader}>
                         {DAYS.map((d, i) => (
-                            <View key={i} style={styles.dayHeader}>
-                                <Text style={styles.dayHeaderText}>{d}</Text>
+                            <View key={i} style={styles.dayHeaderCell}>
+                                <Text style={[
+                                    styles.dayHeaderText,
+                                    i >= 5 && { color:COLORS.border },
+                                ]}>
+                                    {d}
+                                </Text>
                             </View>
                         ))}
                     </View>
 
-                    {Array.from({ length: 6 }, (_, week) => (
-                        <View key={week} style={styles.weekRow}>
-                            {days.slice(week * 7, week * 7 + 7).map((day, i) => {
-                                const dayTasks   = getTasksForDay(day.date);
-                                const todayStyle = isToday(day.date);
+                    {/* Semaines */}
+                    {Array.from({ length:6 }, (_, w) => (
+                        <View key={w} style={styles.weekRow}>
+                            {days.slice(w*7, w*7+7).map((day, i) => {
+                                const dayTasks = getTasksForDay(day.date);
+                                const now      = isToday(day.date);
+                                const we       = isWeekend(day.date);
                                 return (
                                     <View key={i} style={[
                                         styles.dayCell,
-                                        !day.current && styles.otherMonth,
-                                        todayStyle && styles.todayCell,
+                                        !day.current && styles.dayCellOut,
+                                        we && !now && styles.dayCellWE,
+                                        now && styles.dayCellToday,
                                     ]}>
-                                        <Text style={[
-                                            styles.dayNumber,
-                                            !day.current && styles.otherMonthText,
-                                            todayStyle && styles.todayNumber,
+                                        {/* Numéro du jour */}
+                                        <View style={[
+                                            styles.dayNum,
+                                            now && styles.dayNumToday,
                                         ]}>
-                                            {day.date.getDate()}
-                                        </Text>
-                                        {dayTasks.slice(0, 2).map(task => {
-                                            if (!task) return null;
-                                            const conf = STATUT_CONFIG[task.statut] || STATUT_CONFIG.a_faire;
+                                            <Text style={[
+                                                styles.dayNumText,
+                                                !day.current && { color:COLORS.border },
+                                                now && { color:'white', fontWeight:'700' },
+                                            ]}>
+                                                {day.date.getDate()}
+                                            </Text>
+                                        </View>
+
+                                        {/* Tâches du jour */}
+                                        {dayTasks.slice(0,2).map(task => {
+                                            const conf = STATUT_CONFIG[task.statut] ?? STATUT_CONFIG.a_faire;
                                             return (
                                                 <TouchableOpacity
                                                     key={task.id}
+                                                    style={[styles.taskPill, { backgroundColor:conf.bg, borderLeftColor:conf.dot }]}
                                                     onPress={() => setSelected(task)}
-                                                    style={[styles.taskPill, { backgroundColor: conf.bg }]}
+                                                    activeOpacity={0.75}
                                                 >
-                                                    <Text style={[styles.taskPillText, { color: conf.color }]} numberOfLines={1}>
+                                                    <Text style={[styles.taskPillText, { color:conf.color }]} numberOfLines={1}>
                                                         {task.titre}
                                                     </Text>
                                                 </TouchableOpacity>
@@ -187,44 +276,79 @@ export default function PlanningScreen() {
                     ))}
                 </View>
 
+                {/* Empty */}
+                {allTasks.length === 0 && (
+                    <View style={styles.emptyState}>
+                        <View style={styles.emptyIcon}>
+                            <Text style={{ fontSize:22, color:COLORS.textLight }}>○</Text>
+                        </View>
+                        <Text style={styles.emptyTitle}>Aucune tâche avec date d'échéance</Text>
+                        <Text style={styles.emptySub}>Ajoutez des dates d'échéance à vos tâches pour les voir ici.</Text>
+                    </View>
+                )}
+
             </ScrollView>
 
-            {/* MODAL DÉTAIL */}
-            <Modal visible={!!selected} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
-                <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelected(null)}>
-                    <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>{selected?.titre}</Text>
-                            <TouchableOpacity onPress={() => setSelected(null)}>
-                                <Text style={styles.modalClose}>×</Text>
+            {/* ── Modal détail tâche ── */}
+            <Modal visible={!!selected} transparent animationType="slide" onRequestClose={() => setSelected(null)}>
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setSelected(null)}
+                >
+                    <TouchableOpacity activeOpacity={1} style={styles.modalSheet}>
+
+                        {/* Handle */}
+                        <View style={styles.modalHandle} />
+
+                        {/* Header */}
+                        <View style={[styles.modalHeader, { backgroundColor: STATUT_CONFIG[selected?.statut]?.bg ?? COLORS.bg }]}>
+                            <View style={{ flex:1, marginRight:12 }}>
+                                <View style={styles.modalStatutRow}>
+                                    <View style={[styles.modalStatutDot, { backgroundColor: STATUT_CONFIG[selected?.statut]?.dot }]} />
+                                    <Text style={[styles.modalStatutLabel, { color: STATUT_CONFIG[selected?.statut]?.color }]}>
+                                        {STATUT_CONFIG[selected?.statut]?.label}
+                                    </Text>
+                                </View>
+                                <Text style={styles.modalTitle}>{selected?.titre}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setSelected(null)} style={styles.modalCloseBtn}>
+                                <Text style={{ fontSize:16, color:COLORS.textMuted, fontWeight:'700' }}>✕</Text>
                             </TouchableOpacity>
                         </View>
 
-                        <Text style={styles.modalProject}>Projet : {selected?.projectTitre}</Text>
-
-                        {getAssigne(selected) && (
-                            <Text style={styles.modalAssigne}>Assigné à : {getAssigne(selected)}</Text>
-                        )}
-
-                        {selected?.description ? (
-                            <Text style={styles.modalDesc}>{selected.description}</Text>
-                        ) : null}
-
-                        <View style={styles.modalInfoRow}>
-                            <Text style={styles.modalLabel}>Statut</Text>
-                            <View style={[styles.modalBadge, { backgroundColor: STATUT_CONFIG[selected?.statut]?.bg }]}>
-                                <Text style={[styles.modalBadgeText, { color: STATUT_CONFIG[selected?.statut]?.color }]}>
-                                    {STATUT_CONFIG[selected?.statut]?.label}
-                                </Text>
+                        {/* Corps */}
+                        <View style={styles.modalBody}>
+                            {/* Projet */}
+                            <View style={styles.modalInfoCard}>
+                                <View style={styles.modalInfoDot} />
+                                <Text style={styles.modalInfoText}>{selected?.projectTitre}</Text>
                             </View>
-                        </View>
-                        <View style={styles.modalInfoRow}>
-                            <Text style={styles.modalLabel}>Priorité</Text>
-                            <Text style={styles.modalValue}>{selected?.priorite}</Text>
-                        </View>
-                        <View style={styles.modalInfoRow}>
-                            <Text style={styles.modalLabel}>Échéance</Text>
-                            <Text style={styles.modalValue}>{selected?.date_echeance}</Text>
+
+                            {/* Assigné */}
+                            {getAssigne(selected) && (
+                                <View style={[styles.modalInfoCard, { backgroundColor:COLORS.greenBg, borderColor:COLORS.greenBorder }]}>
+                                    <View style={[styles.modalInfoDot, { backgroundColor:COLORS.green }]} />
+                                    <Text style={[styles.modalInfoText, { color:COLORS.green }]}>
+                                        Assigné à : {getAssigne(selected)}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {selected?.description && (
+                                <Text style={styles.modalDesc}>{selected.description}</Text>
+                            )}
+
+                            {/* Infos */}
+                            {[
+                                { label:'Priorité', value: selected?.priorite === 'haute' ? 'Haute' : selected?.priorite === 'normale' ? 'Normale' : 'Basse' },
+                                { label:'Échéance', value: selected?.date_echeance },
+                            ].map(r => (
+                                <View key={r.label} style={styles.modalRow}>
+                                    <Text style={styles.modalRowLabel}>{r.label}</Text>
+                                    <Text style={styles.modalRowValue}>{r.value}</Text>
+                                </View>
+                            ))}
                         </View>
                     </TouchableOpacity>
                 </TouchableOpacity>
@@ -234,43 +358,125 @@ export default function PlanningScreen() {
 }
 
 const styles = StyleSheet.create({
-    safe:           { flex: 1, backgroundColor: '#f8fafc' },
-    center:         { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText:    { marginTop: 12, color: '#94a3b8', fontSize: 14 },
-    container:      { padding: 16, paddingBottom: 32 },
-    title:          { fontSize: 22, fontWeight: '700', color: '#0f172a', marginBottom: 2 },
-    subtitle:       { fontSize: 13, color: '#94a3b8', marginBottom: 14 },
-    filtersRow:     { marginBottom: 14 },
-    filterBtn:      { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#e2e8f0', backgroundColor: 'white', marginRight: 8 },
-    filterText:     { fontSize: 12, fontWeight: '500', color: '#64748b' },
-    navRow:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-    navBtn:         { backgroundColor: 'white', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-    navBtnText:     { fontSize: 13, color: '#374151' },
-    monthTitle:     { fontSize: 16, fontWeight: '600', color: '#0f172a' },
-    calendar:       { backgroundColor: 'white', borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', overflow: 'hidden' },
-    weekRow:        { flexDirection: 'row' },
-    dayHeader:      { flex: 1, paddingVertical: 8, alignItems: 'center', backgroundColor: '#f8fafc' },
-    dayHeaderText:  { fontSize: 11, fontWeight: '600', color: '#64748b' },
-    dayCell:        { flex: 1, minHeight: 70, borderWidth: 0.5, borderColor: '#e2e8f0', padding: 4 },
-    otherMonth:     { backgroundColor: '#f8fafc' },
-    todayCell:      { borderColor: '#1d4ed8', borderWidth: 1.5 },
-    dayNumber:      { fontSize: 11, fontWeight: '500', color: '#0f172a', marginBottom: 2 },
-    otherMonthText: { color: '#cbd5e1' },
-    todayNumber:    { color: '#1d4ed8', fontWeight: '700' },
-    taskPill:       { borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1, marginBottom: 2 },
-    taskPillText:   { fontSize: 9, fontWeight: '600' },
-    moreText:       { fontSize: 9, color: '#94a3b8', fontWeight: '500' },
-    modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
-    modalCard:      { backgroundColor: 'white', borderRadius: 12, padding: 20, width: '88%', maxWidth: 380 },
-    modalHeader:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-    modalTitle:     { fontSize: 16, fontWeight: '600', color: '#0f172a', flex: 1, marginRight: 8 },
-    modalClose:     { fontSize: 22, color: '#94a3b8' },
-    modalProject:   { fontSize: 12, color: '#64748b', marginBottom: 6 },
-    modalAssigne:   { fontSize: 12, color: '#10b981', fontWeight: '600', marginBottom: 10 },
-    modalDesc:      { fontSize: 13, color: '#64748b', marginBottom: 12, lineHeight: 19 },
-    modalInfoRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-    modalLabel:     { fontSize: 12, color: '#94a3b8' },
-    modalValue:     { fontSize: 12, fontWeight: '500', color: '#374151' },
-    modalBadge:     { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
-    modalBadgeText: { fontSize: 11, fontWeight: '600' },
+    safe:      { flex:1, backgroundColor:COLORS.bg },
+    container: { paddingBottom:36 },
+
+    header:   { paddingHorizontal:20, paddingTop:18, paddingBottom:14 },
+    title:    { fontSize:23, fontWeight:'700', color:COLORS.text, letterSpacing:-0.6, marginBottom:3 },
+    subtitle: { fontSize:13, color:COLORS.textLight },
+
+    filterBtn: {
+        flexDirection:'row', alignItems:'center', gap:6,
+        paddingHorizontal:13, paddingVertical:8,
+        borderRadius:20, borderWidth:1, borderColor:COLORS.border,
+        backgroundColor:COLORS.white,
+    },
+    filterDot:  { width:6, height:6, borderRadius:3 },
+    filterText: { fontSize:12.5, fontWeight:'500', color:COLORS.textMuted },
+
+    /* Nav */
+    navRow: {
+        flexDirection:'row', alignItems:'center',
+        paddingHorizontal:16, marginBottom:14, gap:8,
+    },
+    navBtn: {
+        width:36, height:36, borderRadius:10,
+        backgroundColor:COLORS.white, borderWidth:1, borderColor:COLORS.border,
+        alignItems:'center', justifyContent:'center',
+    },
+    navBtnText: { fontSize:20, color:COLORS.text, fontWeight:'500', lineHeight:24 },
+    monthTitle: {
+        flex:1, textAlign:'center',
+        fontSize:16, fontWeight:'700', color:COLORS.text, letterSpacing:-0.3,
+    },
+    todayBtn: {
+        backgroundColor:COLORS.indigoBg, borderWidth:1, borderColor:COLORS.indigoBorder,
+        borderRadius:10, paddingHorizontal:12, paddingVertical:8,
+    },
+    todayBtnText: { fontSize:12.5, fontWeight:'700', color:COLORS.indigo },
+
+    /* Calendrier */
+    calendar: {
+        marginHorizontal:16,
+        backgroundColor:COLORS.white, borderRadius:14,
+        borderWidth:1, borderColor:COLORS.border, overflow:'hidden',
+        shadowColor:'#0F172A', shadowOpacity:0.04,
+        shadowRadius:8, shadowOffset:{ width:0, height:2 }, elevation:2,
+    },
+    weekHeader:    { flexDirection:'row', backgroundColor:COLORS.bg, borderBottomWidth:1, borderBottomColor:COLORS.border },
+    dayHeaderCell: { flex:1, paddingVertical:9, alignItems:'center' },
+    dayHeaderText: { fontSize:11, fontWeight:'700', color:COLORS.textLight, textTransform:'uppercase' },
+    weekRow:       { flexDirection:'row' },
+    dayCell: {
+        flex:1, minHeight:72, padding:5,
+        borderWidth:0.5, borderColor:COLORS.borderLight,
+        backgroundColor:COLORS.white,
+    },
+    dayCellOut:   { backgroundColor:'#FAFAFA' },
+    dayCellWE:    { backgroundColor:'#FAFAFA' },
+    dayCellToday: { backgroundColor:COLORS.indigoBg },
+
+    dayNum: {
+        width:20, height:20, borderRadius:10,
+        alignItems:'center', justifyContent:'center', marginBottom:3,
+    },
+    dayNumToday:  { backgroundColor:COLORS.indigo },
+    dayNumText:   { fontSize:11, fontWeight:'500', color:COLORS.text },
+
+    taskPill: {
+        borderRadius:4, paddingHorizontal:4, paddingVertical:2,
+        marginBottom:2, borderLeftWidth:2,
+    },
+    taskPillText: { fontSize:9.5, fontWeight:'700' },
+    moreText:     { fontSize:9, color:COLORS.textLight, fontWeight:'600', paddingLeft:2 },
+
+    /* Empty */
+    emptyState: { alignItems:'center', paddingTop:36, paddingHorizontal:32 },
+    emptyIcon: {
+        width:52, height:52, borderRadius:14,
+        backgroundColor:COLORS.white, borderWidth:1, borderColor:COLORS.border,
+        alignItems:'center', justifyContent:'center', marginBottom:12,
+    },
+    emptyTitle: { fontSize:15, fontWeight:'700', color:COLORS.text, marginBottom:5, textAlign:'center' },
+    emptySub:   { fontSize:13, color:COLORS.textLight, textAlign:'center', lineHeight:19 },
+
+    /* Modal */
+    modalOverlay: {
+        flex:1, backgroundColor:'rgba(15,23,42,0.5)',
+        justifyContent:'flex-end',
+    },
+    modalSheet: {
+        backgroundColor:COLORS.white,
+        borderTopLeftRadius:24, borderTopRightRadius:24,
+        overflow:'hidden',
+        shadowColor:'#000', shadowOpacity:0.15, shadowRadius:20,
+        shadowOffset:{ width:0, height:-4 }, elevation:10,
+    },
+    modalHandle: {
+        width:36, height:4, borderRadius:2,
+        backgroundColor:COLORS.border,
+        alignSelf:'center', marginTop:10, marginBottom:4,
+    },
+    modalHeader:   { padding:20, paddingTop:16, paddingBottom:18 },
+    modalStatutRow:{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:6 },
+    modalStatutDot:{ width:7, height:7, borderRadius:4 },
+    modalStatutLabel:{ fontSize:11.5, fontWeight:'700', textTransform:'uppercase', letterSpacing:0.5 },
+    modalTitle:    { fontSize:19, fontWeight:'700', color:COLORS.text, letterSpacing:-0.4, lineHeight:25 },
+    modalCloseBtn: {
+        width:32, height:32, borderRadius:8,
+        backgroundColor:'rgba(0,0,0,0.06)',
+        alignItems:'center', justifyContent:'center',
+    },
+    modalBody:    { padding:20, paddingTop:4, paddingBottom:32, gap:10 },
+    modalInfoCard:{
+        flexDirection:'row', alignItems:'center', gap:9,
+        backgroundColor:COLORS.bg, borderWidth:1, borderColor:COLORS.border,
+        borderRadius:10, paddingHorizontal:13, paddingVertical:10,
+    },
+    modalInfoDot: { width:7, height:7, borderRadius:4, backgroundColor:COLORS.textLight, flexShrink:0 },
+    modalInfoText:{ fontSize:13.5, fontWeight:'600', color:COLORS.textMuted, flex:1 },
+    modalDesc:    { fontSize:13.5, color:COLORS.textMuted, lineHeight:21 },
+    modalRow:     { flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingVertical:10, borderBottomWidth:1, borderBottomColor:COLORS.borderLight },
+    modalRowLabel:{ fontSize:13, color:COLORS.textLight },
+    modalRowValue:{ fontSize:13, fontWeight:'600', color:COLORS.text },
 });

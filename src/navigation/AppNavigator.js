@@ -22,7 +22,7 @@ import PlanningScreen from '../screens/PlanningScreen';
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-const ACTIVE   = '#1d4ed8';
+const ACTIVE   = '#0F172A';  
 const INACTIVE = '#94a3b8';
 
 function IconDashboard({ color, size = 22 }) {
@@ -142,22 +142,23 @@ function MainTabs() {
                 tabBarActiveTintColor:   ACTIVE,
                 tabBarInactiveTintColor: INACTIVE,
                 tabBarStyle: {
-                    height: 64,
-                    paddingBottom: 8,
+                    height: 68,
+                    paddingBottom: 10,
                     paddingTop: 8,
                     backgroundColor: 'white',
-                    borderTopWidth: 1,
-                    borderTopColor: '#f1f5f9',
-                    elevation: 0,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.05,
-                    shadowRadius: 8,
-                    shadowOffset: { width: 0, height: -2 },
+                    borderTopWidth: 0.5,
+                    borderTopColor: '#E2E8F0',
+                    elevation: 8,
+                    shadowColor: '#0F172A',
+                    shadowOpacity: 0.08,
+                    shadowRadius: 12,
+                    shadowOffset: { width: 0, height: -3 },
                 },
                 tabBarLabelStyle: {
-                    fontSize: 11,
-                    fontWeight: '500',
-                    marginTop: 2,
+                    fontSize: 10.5,
+                    fontWeight: '600',
+                    marginTop: 1,
+                    letterSpacing: 0.1,
                 },
                 headerShown: false,
             }}
