@@ -111,15 +111,18 @@ Route::post('/auth/reset-password', function (Request $request) {
         'email'    => 'required|email',
         'token'    => 'required',
         'password' => [
-        'required',
-        'min:12',
-        'regex:/[A-Z]/',
-        'regex:/[a-z]/',
-        'regex:/[0-9]/',
-        'regex:/[@$!%*#?&^_\-+=]/',
-        'confirmed',
-    ],
-
+            'required',
+            'min:12',
+            'regex:/[A-Z]/',
+            'regex:/[a-z]/',
+            'regex:/[0-9]/',
+            'regex:/[@$!%*#?&^_\-+=]/',
+            'confirmed',
+        ],
+    ], [
+        'password.min'       => 'Le mot de passe doit contenir au moins 12 caractères.',
+        'password.regex'     => 'Doit contenir majuscule, minuscule, chiffre et caractère spécial.',
+        'password.confirmed' => 'La confirmation ne correspond pas.',
     ]);
 
     $record = \DB::table('password_reset_tokens')
@@ -136,6 +139,12 @@ Route::post('/auth/reset-password', function (Request $request) {
     }
 
     $user = \App\Models\User::where('email', $request->email)->first();
+
+    // ✅ Empêcher de remettre le même mot de passe
+    if (Hash::check($request->password, $user->password)) {
+        return response()->json(['message' => 'Le nouveau mot de passe doit être différent de l\'ancien.'], 422);
+    }
+
     $user->update(['password' => Hash::make($request->password)]);
 
     \DB::table('password_reset_tokens')->where('email', $request->email)->delete();
@@ -170,13 +179,18 @@ Route::middleware('auth:sanctum')->group(function () {
                 'confirmed',
             ],
         ], [
-            'password.min'      => 'Le mot de passe doit contenir au moins 12 caractères.',
-            'password.regex'    => 'Doit contenir majuscule, minuscule, chiffre et caractère spécial.',
-            'password.confirmed'=> 'La confirmation ne correspond pas.',
+            'password.min'       => 'Le mot de passe doit contenir au moins 12 caractères.',
+            'password.regex'     => 'Doit contenir majuscule, minuscule, chiffre et caractère spécial.',
+            'password.confirmed' => 'La confirmation ne correspond pas.',
         ]);
 
         if (!Hash::check($request->current_password, $request->user()->password)) {
             return response()->json(['message' => 'Mot de passe actuel incorrect.'], 422);
+        }
+
+        // ✅ Empêcher de remettre le même mot de passe
+        if (Hash::check($request->password, $request->user()->password)) {
+            return response()->json(['message' => 'Le nouveau mot de passe doit être différent de l\'ancien.'], 422);
         }
 
         $request->user()->update([
