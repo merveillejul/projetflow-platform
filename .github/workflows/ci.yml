@@ -1,0 +1,62 @@
+name: CI — API Laravel
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Tests & Vérification
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: projectflow_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo, pdo_mysql, xml, curl, json
+          coverage: none
+
+      - name: Installer les dépendances PHP
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Copier le fichier .env de test
+        run: cp .env.example .env.testing
+
+      - name: Configurer l'environnement de test
+        run: |
+          echo "APP_ENV=testing" >> .env.testing
+          echo "APP_KEY=" >> .env.testing
+          echo "DB_CONNECTION=mysql" >> .env.testing
+          echo "DB_HOST=127.0.0.1" >> .env.testing
+          echo "DB_PORT=3306" >> .env.testing
+          echo "DB_DATABASE=projectflow_test" >> .env.testing
+          echo "DB_USERNAME=root" >> .env.testing
+          echo "DB_PASSWORD=secret" >> .env.testing
+
+      - name: Générer la clé d'application
+        run: php artisan key:generate --env=testing
+
+      - name: Exécuter les migrations
+        run: php artisan migrate --env=testing --force
+
+      - name: Lancer les tests PHPUnit
+        run: php artisan test --env=testing
+
+      - name: Vérifier la syntaxe PHP (lint)
+        run: find app -name "*.php" -exec php -l {} \;

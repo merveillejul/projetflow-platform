@@ -33,7 +33,7 @@ RateLimiter::for('login', function (Request $request) {
 // ROUTES PUBLIQUES
 // ═══════════════════════════════════════
 Route::get('/', fn() => response()->json(['message' => 'ProjectFlow API fonctionne']));
-Route::post('/register', [AuthController::class, 'register']);
+Route::middleware('throttle:10,1')->post('/register', [AuthController::class, 'register']);
 Route::middleware('throttle:login')->post('/login', [AuthController::class, 'login']);
 
 // Mot de passe oublié — pas besoin d'être connecté
@@ -65,7 +65,7 @@ Route::post('/auth/forgot-password', function (Request $request) {
         ])->post('https://api.brevo.com/v3/smtp/email', [
             'sender' => [
                 'name'  => 'ProjectFlow',
-                'email' => 'merveillenourryssou@outlook.fr',
+                'email' => env('BREVO_SENDER_EMAIL', 'noreply@projectflow.fr'),
             ],
             'to' => [[
                 'email' => $user->email,
@@ -100,7 +100,7 @@ Route::post('/auth/forgot-password', function (Request $request) {
         }
 
     } catch (\Exception $e) {
-        \Log::error('Mail error: ' . $e->getMessage());
+        \Log::error('Brevo send error: ' . $e->getMessage());
     }
 
     return response()->json(['message' => 'Si cet email existe, un lien vous a été envoyé.']);
@@ -206,7 +206,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Première connexion
     Route::post('/auth/first-login-password', function (Request $request) {
-        $request->validate(['password' => 'required|min:12']);
+        $request->validate([
+            'password' => [
+                'required',
+                'min:12',
+                'regex:/[A-Z]/',
+                'regex:/[a-z]/',
+                'regex:/[0-9]/',
+                'regex:/[@$!%*#?&^_\-+=]/',
+                'confirmed',
+            ],
+        ], [
+            'password.min'       => 'Le mot de passe doit contenir au moins 12 caractères.',
+            'password.regex'     => 'Doit contenir majuscule, minuscule, chiffre et caractère spécial.',
+            'password.confirmed' => 'La confirmation ne correspond pas.',
+        ]);
+
         $request->user()->update([
             'password'    => Hash::make($request->password),
             'first_login' => false,

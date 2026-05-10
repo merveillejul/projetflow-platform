@@ -7,6 +7,7 @@ use App\Models\Notification;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use App\Models\Task;
+use Illuminate\Http\Request as HttpRequest;
 
 class CommentController extends Controller
 {
@@ -53,8 +54,14 @@ class CommentController extends Controller
         return response()->json($comment->load('user'), 201);
     }
 
-    public function destroy(Comment $comment)
+    public function destroy(Comment $comment, HttpRequest $request)
     {
+        $user = $request->user();
+
+        if ($comment->user_id !== $user->id && $user->role !== 'admin') {
+            return response()->json(['message' => 'Interdit — vous ne pouvez supprimer que vos propres commentaires.'], 403);
+        }
+
         $comment->delete();
         return response()->json(['message' => 'Commentaire supprimé.']);
     }

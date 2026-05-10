@@ -16,8 +16,19 @@ class FileController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function index(Project $project)
+    public function index(Project $project, Request $request)
     {
+        $user = $request->user();
+
+        if ($user->role !== 'admin') {
+            $isMember = $project->members()->where('user_id', $user->id)->exists();
+            $isOwner  = $project->user_id === $user->id;
+
+            if (!$isMember && !$isOwner) {
+                return response()->json(['message' => 'Accès interdit à ce projet.'], 403);
+            }
+        }
+
         return $project->files()
             ->with('uploader')
             ->latest()
@@ -33,7 +44,7 @@ class FileController extends Controller
     public function store(Request $request, Project $project)
     {
         $request->validate([
-            'file' => 'required|file|max:10240'
+            'file' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,png,jpg,jpeg,gif,webp,zip,csv',
         ]);
 
         $uploadedFile = $request->file('file');

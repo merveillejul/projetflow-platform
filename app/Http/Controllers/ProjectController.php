@@ -34,8 +34,19 @@ class ProjectController extends Controller
         );
     }
 
-    public function show(Project $project)
+    public function show(Project $project, Request $request)
     {
+        $user = $request->user();
+
+        if ($user->role !== 'admin') {
+            $isMember = $project->members()->where('user_id', $user->id)->exists();
+            $isOwner  = $project->user_id === $user->id;
+
+            if (!$isMember && !$isOwner) {
+                return response()->json(['message' => 'Accès interdit à ce projet.'], 403);
+            }
+        }
+
         return response()->json($project->load('members', 'tasks', 'owner'));
     }
 
