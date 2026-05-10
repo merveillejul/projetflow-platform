@@ -1,71 +1,113 @@
-# ProjectFlow — Application Web React JS
+# ProjectFlow — Application Web
 
-Interface web de l'application ProjectFlow. SPA (Single Page Application) consommant l'API REST Laravel.
+> Interface web du projet de gestion de projets collaboratifs ProjectFlow.  
+> Développée avec **React 19 + Vite**, déployée sur **Vercel**.
+
+---
 
 ## Stack technique
 
-- React JS 18 (Vite)
-- JavaScript ES6+
-- Axios (appels HTTP)
-- React Router v6
-- Recharts (graphiques)
-- Police Inter (Google Fonts)
+| Technologie | Rôle |
+|---|---|
+| React 19 | Framework frontend |
+| Vite | Bundler ultra-rapide |
+| React Router v7 | Navigation entre les pages |
+| Axios | Requêtes HTTP vers l'API |
+| Recharts | Graphiques du tableau de bord |
+| Vercel | Hébergement et déploiement |
 
-## Prérequis
+---
 
-- Node.js 18+
-- API Laravel démarrée sur `http://localhost:8000`
+## Fonctionnalités
 
-## Installation
+- Connexion / déconnexion sécurisée
+- Tableau de bord avec statistiques (graphiques)
+- Gestion des projets (création, modification, suppression)
+- Gestion des tâches (Kanban, planning)
+- Système de commentaires en temps réel
+- Upload et téléchargement de fichiers
+- Notifications
+- Interface d'administration (validation comptes, gestion rôles)
+- Réinitialisation de mot de passe par email
+
+---
+
+## Installation locale
 
 ```bash
+# 1. Cloner le repo
+git clone https://github.com/ton-compte/projectflow-web.git
 cd projectflow-web
+
+# 2. Installer les dépendances
 npm install
+
+# 3. Lancer en développement
 npm run dev
 ```
 
-L'application est accessible sur `http://localhost:5173`
+---
 
-## Configuration
+## Variables d'environnement
 
-L'URL de l'API est configurée dans `src/api/api.js` :
-
-```javascript
-baseURL: 'http://localhost:8000/api'
+```
+VITE_API_URL=https://projetflow-platform-production.up.railway.app/api
 ```
 
-Si tu utilises une IP réseau différente, modifie cette ligne.
+---
 
-## Comptes de démonstration
-
-| Rôle | Email | Mot de passe |
-|------|-------|--------------|
-| Administrateur | admin.projectflow@demo.fr | Admin@PF2026! |
-| Chef de projet | chef.projectflow@demo.fr | Chef@PF2026! |
-| Membre | membre.projectflow@demo.fr | Membre@PF2026! |
-
-## Structure des pages
-
-| Route | Page | Accès |
-|-------|------|-------|
-| / | Connexion | Tous |
-| /register | Inscription | Tous |
-| /admin | Interface Admin | Admin |
-| /dashboard | Tableau de bord | Chef + Membre |
-| /projects | Liste des projets | Chef + Membre |
-| /projects/:id | Détail projet | Chef + Membre |
-| /tasks | Mes tâches | Chef + Membre |
-| /notifications | Notifications | Chef + Membre |
-| /profile | Profil | Tous (connectés) |
-
-## Lancer en production
+## Scripts disponibles
 
 ```bash
-npm run build
+npm run dev      # Serveur de développement (localhost:5173)
+npm run build    # Compilation pour la production
+npm run preview  # Prévisualiser le build
+npm run lint     # Vérifier la qualité du code
 ```
 
-Les fichiers compilés sont dans le dossier `dist/`.
+---
+
+## Architecture des pages
+
+```
+src/
+├── api/           # Appels vers l'API REST
+├── components/    # Composants réutilisables (Navbar, Sidebar, PrivateRoute)
+├── context/       # AuthContext — gestion de l'état de connexion global
+├── pages/         # Toutes les pages de l'application
+│   ├── Login, Register, ForgotPassword, ResetPassword
+│   ├── Dashboard, Projects, Tasks, Planning, Board
+│   ├── ProjectDetails, CreateProject, EditProject
+│   ├── Admin, Profile, Notifications
+└── utils/         # Fonctions utilitaires (dates, etc.)
+```
+
+---
+
+## Sécurité
+
+- Routes protégées avec `PrivateRoute` (redirige si non connecté)
+- Token Bearer envoyé automatiquement via intercepteur Axios
+- Déconnexion automatique si le token expire (réponse 401)
+- Données utilisateur stockées en `localStorage`
+
+---
+
+## CI/CD
+
+Chaque push sur `main` déclenche automatiquement :
+1. Vérification ESLint (qualité du code)
+2. Build de production (`npm run build`)
+3. Déploiement automatique sur Vercel (via intégration GitHub)
+
+---
+
+## URL de production
+
+[https://projectflow-web-pink.vercel.app](https://projectflow-web-pink.vercel.app)
+
+---
 
 ## Auteur
 
-Merveille Juliana — BTS SIO SLAM 2026 — N° 2545871902
+Projet réalisé dans le cadre du BTS SIO option SLAM.
