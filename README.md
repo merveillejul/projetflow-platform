@@ -1,76 +1,103 @@
-# ProjectFlow — Application Mobile React Native
+# ProjectFlow — Application Mobile
 
-Application mobile Android de ProjectFlow. Développée avec React Native (Expo), consomme la même API REST Laravel que l'application web.
+> Application mobile du projet de gestion de projets collaboratifs ProjectFlow.  
+> Développée avec **React Native + Expo**.
+
+---
 
 ## Stack technique
 
-- React Native (Expo SDK)
-- JavaScript ES6+
-- React Navigation v6 (Tab + Stack Navigator)
-- Axios + AsyncStorage (authentification JWT)
-- react-native-svg (icônes et graphiques)
+| Technologie | Rôle |
+|---|---|
+| React Native | Framework mobile cross-platform (iOS + Android) |
+| Expo | Outils de développement et build simplifié |
+| React Navigation | Navigation entre les écrans |
+| Axios | Requêtes HTTP vers l'API |
+| AsyncStorage | Stockage local sécurisé du token |
+| EAS Build | Compilation de l'APK/IPA |
 
-## Prérequis
+---
 
-- Node.js 18+ (requis pour Metro bundler et npm — ce n'est PAS un backend)
-- Expo CLI : `npm install -g expo-cli`
-- API Laravel démarrée et accessible sur le réseau local
-- Expo Go installé sur ton smartphone Android OU Android Studio pour l'émulateur
+## Fonctionnalités
 
-## Installation
+- Connexion / déconnexion
+- Consultation des projets et tâches
+- Mise à jour du statut des tâches assignées
+- Notifications
+- Gestion du profil
+- Changement de mot de passe
+- Réinitialisation de mot de passe
+
+---
+
+## Installation locale
 
 ```bash
+# 1. Cloner le repo
+git clone https://github.com/ton-compte/projectflow-mobile.git
 cd projectflow-mobile
+
+# 2. Installer les dépendances
 npm install
+
+# 3. Lancer avec Expo
 npx expo start
 ```
 
-Puis :
-- Scanner le QR code avec Expo Go (smartphone Android)
-- Appuyer sur `a` dans le terminal pour ouvrir sur l'émulateur Android Studio
+Puis scanner le QR code avec l'application **Expo Go** sur votre téléphone.
 
-## Configuration
+---
 
-L'URL de l'API est configurée dans `services/api.js` :
+## Architecture des écrans
 
-```javascript
-baseURL: 'http://192.168.X.X:8000/api'  // Remplacer par ton IP locale
+```
+src/
+├── context/
+│   └── AuthContext.js     # Gestion globale de l'authentification
+├── navigation/
+│   └── AppNavigator.js    # Définition des routes de navigation
+├── screens/               # Tous les écrans de l'application
+│   ├── LoginScreen
+│   ├── RegisterScreen
+│   ├── DashboardScreen
+│   ├── TasksScreen
+│   ├── ProjectsScreen
+│   ├── PlanningScreen
+│   ├── NotificationsScreen
+│   ├── ProfileScreen
+│   ├── ChangePasswordScreen
+│   └── ForgotPasswordScreen
+└── services/
+    └── api.js             # Configuration Axios + intercepteurs
 ```
 
-Pour trouver ton IP : `ipconfig` dans PowerShell → IPv4 de ta carte réseau.
+---
 
-## Comptes de démonstration
+## Différence avec l'application web
 
-| Rôle | Email | Mot de passe |
-|------|-------|--------------|
-| Chef de projet | chef.projectflow@demo.fr | Chef@PF2026! |
-| Membre | membre.projectflow@demo.fr | Membre@PF2026! |
+| Fonctionnalité | Web | Mobile |
+|---|---|---|
+| Tableau de bord complet | Oui | Oui (simplifié) |
+| Administration | Oui | Non |
+| Upload de fichiers | Oui | Non |
+| Kanban Board | Oui | Non |
+| Consultation tâches/projets | Oui | Oui |
+| Notifications | Oui | Oui |
+| Profil / MDP | Oui | Oui |
 
-## Écrans disponibles
+> L'application mobile est conçue pour un usage terrain (membres d'équipe),
+> tandis que l'interface web est l'outil de gestion complet (chefs de projet, administrateurs).
 
-| Écran | Description |
-|-------|-------------|
-| LoginScreen | Connexion |
-| RegisterScreen | Inscription |
-| ChangePasswordScreen | 1ère connexion — mot de passe forcé |
-| DashboardScreen | Tableau de bord avec statistiques |
-| ProjectsScreen | Liste des projets avec filtres |
-| ProjectDetailScreen | Détail projet, tâches, équipe, commentaires |
-| TasksScreen | Mes tâches avec mise à jour de statut |
-| NotificationsScreen | Notifications avec badge |
-| ProfileScreen | Profil et déconnexion |
+---
 
-## Générer l'APK Android
+## Sécurité
 
-```bash
-npm install -g eas-cli
-eas build -p android
-```
+- Token stocké dans `AsyncStorage` (stockage natif sécurisé)
+- Déconnexion automatique si token expiré (erreur 401)
+- `DeviceEventEmitter` pour gérer la session expirée depuis n'importe quel écran
 
-## Note sur Node.js
-
-Node.js est utilisé exclusivement comme moteur d'exécution pour le Metro bundler d'Expo et les outils npm. Il ne constitue pas un backend supplémentaire — le backend unique du projet est l'API REST Laravel.
+---
 
 ## Auteur
 
-Merveille Juliana — BTS SIO SLAM 2026 — N° 2545871902
+Projet réalisé dans le cadre du BTS SIO option SLAM.
