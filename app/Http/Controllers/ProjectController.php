@@ -74,9 +74,14 @@ class ProjectController extends Controller
 
     public function update(Request $request, Project $project)
     {
-        // Si on essaie de terminer le projet
+        $user = $request->user();
+
+        if ($user->role !== 'admin' && intval($project->user_id) !== intval($user->id)) {
+            return response()->json(['message' => 'Vous ne pouvez modifier que vos propres projets.'], 403);
+        }
+
         if ($request->statut === 'termine') {
-            $totalTaches = $project->tasks()->count();
+            $totalTaches     = $project->tasks()->count();
             $tachesTerminees = $project->tasks()->where('statut', 'termine')->count();
 
             if ($totalTaches > 0 && $tachesTerminees < $totalTaches) {
@@ -94,8 +99,14 @@ class ProjectController extends Controller
         return response()->json($project);
     }
 
-    public function destroy(Project $project)
+    public function destroy(Project $project, Request $request)
     {
+        $user = $request->user();
+
+        if ($user->role !== 'admin' && intval($project->user_id) !== intval($user->id)) {
+            return response()->json(['message' => 'Vous ne pouvez supprimer que vos propres projets.'], 403);
+        }
+
         $project->delete();
 
         return response()->json(['message' => 'Projet supprimé.']);

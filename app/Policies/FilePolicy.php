@@ -9,8 +9,14 @@ class FilePolicy
 {
     public function view(User $user, File $file)
     {
-        return $file->project->members()
-            ->where('user_id',$user->id)
+        $project = $file->project;
+
+        if ($project && intval($project->user_id) === intval($user->id)) {
+            return true;
+        }
+
+        return $project && $project->members()
+            ->where('user_id', $user->id)
             ->exists();
     }
 

@@ -8,10 +8,13 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\CompteValide;
 use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
-    // ✅ REGISTER — validation renforcée du mot de passe
+    private const MAX_ATTEMPTS    = 5;
+    private const LOCKOUT_MINUTES = 15;
+
     public function register(Request $request)
     {
         $request->validate([
@@ -21,10 +24,10 @@ class AuthController extends Controller
             'password' => [
                 'required',
                 'min:12',
-                'regex:/[A-Z]/',               // Au moins 1 majuscule
-                'regex:/[a-z]/',               // Au moins 1 minuscule
-                'regex:/[0-9]/',               // Au moins 1 chiffre
-                'regex:/[@$!%*#?&^_\-+=]/',   // Au moins 1 caractère spécial
+                'regex:/[A-Z]/',
+                'regex:/[a-z]/',
+                'regex:/[0-9]/',
+                'regex:/[@$!%*#?&^_\-+=]/',
             ],
         ], [
             'password.min'   => 'Le mot de passe doit contenir au moins 12 caractères.',
@@ -46,7 +49,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    // ✅ LOGIN — rate limiting géré dans routes/api.php (voir ci-dessous)
     public function login(Request $request)
     {
         $request->validate([
@@ -56,10 +58,43 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        // ✅ Message volontairement identique pour ne pas révéler si l'email existe
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user) {
             return response()->json(['message' => 'Email ou mot de passe incorrect.'], 401);
         }
+
+        if ($user->isLocked()) {
+            $minutes = (int) now()->diffInMinutes($user->locked_until, false);
+            return response()->json([
+                'message' => "Compte temporairement bloqué après trop de tentatives échouées. Réessayez dans {$minutes} minute(s).",
+            ], 429);
+        }
+
+        if (!Hash::check($request->password, $user->password)) {
+            $attempts = $user->login_attempts + 1;
+
+            if ($attempts >= self::MAX_ATTEMPTS) {
+                $user->update([
+                    'login_attempts' => $attempts,
+                    'locked_until'   => Carbon::now()->addMinutes(self::LOCKOUT_MINUTES),
+                ]);
+
+                return response()->json([
+                    'message' => 'Trop de tentatives échouées. Compte bloqué pendant ' . self::LOCKOUT_MINUTES . ' minutes.',
+                ], 429);
+            }
+
+            $remaining = self::MAX_ATTEMPTS - $attempts;
+            $user->update(['login_attempts' => $attempts]);
+
+            return response()->json([
+                'message' => "Email ou mot de passe incorrect. Il vous reste {$remaining} tentative(s) avant blocage.",
+            ], 401);
+        }
+
+        $user->update([
+            'login_attempts' => 0,
+            'locked_until'   => null,
+        ]);
 
         if ($user->statut === 'en_attente') {
             return response()->json(['message' => 'Votre compte est en attente de validation.'], 403);
@@ -69,11 +104,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Votre compte a été suspendu.'], 403);
         }
 
-        // ✅ Supprimer les anciens tokens avant d'en créer un nouveau
-        // Évite l'accumulation de tokens orphelins en base de données
         $user->tokens()->delete();
-
-        // ✅ Token avec expiration de 2h (définie dans sanctum.php)
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -84,15 +115,12 @@ class AuthController extends Controller
         ]);
     }
 
-    // ✅ LOGOUT — supprime uniquement le token actuel, pas tous les tokens
-    // Utile si l'utilisateur est connecté sur plusieurs appareils
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Déconnexion réussie']);
     }
 
-    // ✅ CHANGER LE MOT DE PASSE (first_login ou profil)
     public function changePassword(Request $request)
     {
         $user = $request->user();
@@ -106,31 +134,32 @@ class AuthController extends Controller
                 'regex:/[a-z]/',
                 'regex:/[0-9]/',
                 'regex:/[@$!%*#?&^_\-+=]/',
-                'confirmed', // ✅ Exige le champ password_confirmation
+                'confirmed',
             ],
         ], [
-            'password.min'      => 'Le mot de passe doit contenir au moins 12 caractères.',
-            'password.regex'    => 'Le mot de passe doit contenir une majuscule, une minuscule, un chiffre et un caractère spécial.',
-            'password.confirmed'=> 'La confirmation ne correspond pas.',
+            'password.min'       => 'Le mot de passe doit contenir au moins 12 caractères.',
+            'password.regex'     => 'Doit contenir majuscule, minuscule, chiffre et caractère spécial.',
+            'password.confirmed' => 'La confirmation ne correspond pas.',
         ]);
 
-        // ✅ Vérifier que l'ancien mot de passe est correct
         if (!Hash::check($request->current_password, $user->password)) {
             return response()->json(['message' => 'Mot de passe actuel incorrect.'], 422);
         }
 
+        if (Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => "Le nouveau mot de passe doit être différent de l'ancien."], 422);
+        }
+
         $user->update([
             'password'    => Hash::make($request->password),
-            'first_login' => false, // ✅ Marque que le premier login est terminé
+            'first_login' => false,
         ]);
 
-        // ✅ Révoquer tous les tokens — force une reconnexion après changement de MDP
         $user->tokens()->delete();
 
         return response()->json(['message' => 'Mot de passe mis à jour. Veuillez vous reconnecter.']);
     }
 
-    // ✅ UPLOAD PHOTO DE PROFIL
     public function uploadPhoto(Request $request)
     {
         $request->validate([
@@ -139,23 +168,16 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        // ✅ Supprimer l'ancienne photo du stockage si elle existe
         if ($user->photo && \Storage::disk('public')->exists($user->photo)) {
             \Storage::disk('public')->delete($user->photo);
         }
 
-        // ✅ Stocker la nouvelle photo dans storage/app/public/photos/
         $path = $request->file('photo')->store('photos', 'public');
-
         $user->update(['photo' => $path]);
 
-        return response()->json([
-            // ✅ URL complète retournée directement au frontend
-            'photo' => \Storage::url($path),
-        ]);
+        return response()->json(['photo' => \Storage::url($path)]);
     }
 
-    // PROFIL — mise à jour nom/email
     public function updateProfile(Request $request)
     {
         $user = $request->user();
@@ -165,13 +187,11 @@ class AuthController extends Controller
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
         ]);
 
-        // ✅ On retire 'photo' — la photo a sa propre route désormais
         $user->update($request->only(['nom', 'email']));
 
         return response()->json($user);
     }
 
-    // LISTE utilisateurs (admin)
     public function listUsers(Request $request)
     {
         return response()->json(
@@ -179,7 +199,6 @@ class AuthController extends Controller
         );
     }
 
-    // VALIDER compte (admin)
     public function validateAccount(Request $request, User $user)
     {
         $request->validate([
@@ -197,7 +216,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'Statut mis à jour.', 'user' => $user]);
     }
 
-    // MODIFIER rôle (admin)
     public function updateRole(Request $request, User $user)
     {
         $request->validate(['role' => 'required|in:admin,chef,membre']);
@@ -205,10 +223,8 @@ class AuthController extends Controller
         return response()->json(['message' => 'Rôle mis à jour.', 'user' => $user]);
     }
 
-    // SUPPRIMER utilisateur (admin)
     public function deleteUser(User $user)
     {
-        // ✅ Supprimer aussi la photo avant de supprimer l'utilisateur
         if ($user->photo && \Storage::disk('public')->exists($user->photo)) {
             \Storage::disk('public')->delete($user->photo);
         }

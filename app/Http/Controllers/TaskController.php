@@ -11,29 +11,49 @@ class TaskController extends Controller
 {
     public function index(Request $request, $projectId)
     {
-        $user = $request->user();
+        $user    = $request->user();
         $project = Project::findOrFail($projectId);
 
-        // Chef voit toutes les tâches de son projet
-        if ($user->role === 'chef' && intval($project->user_id) === intval($user->id)) {
-            return Task::with('assignedUser')
-                ->where('project_id', $projectId)
-                ->get();
+        if ($user->role === 'admin') {
+            return Task::with('assignedUser')->where('project_id', $projectId)->get();
         }
 
-        // Vérifier si membre via la table project_user directement
+        if ($user->role === 'chef' && intval($project->user_id) === intval($user->id)) {
+            return Task::with('assignedUser')->where('project_id', $projectId)->get();
+        }
+
         $isMember = \DB::table('project_user')
             ->where('project_id', $projectId)
             ->where('user_id', $user->id)
             ->exists();
 
         if ($isMember) {
-            return Task::with('assignedUser')
-                ->where('project_id', $projectId)
-                ->get();
+            return Task::with('assignedUser')->where('project_id', $projectId)->get();
         }
 
         return response()->json([]);
+    }
+
+    public function show(Request $request, Task $task)
+    {
+        $user    = $request->user();
+        $project = $task->project;
+
+        if ($user->role === 'admin') {
+            return response()->json($task);
+        }
+
+        $isOwner  = $project && intval($project->user_id) === intval($user->id);
+        $isMember = $project && \DB::table('project_user')
+            ->where('project_id', $project->id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (!$isOwner && !$isMember) {
+            return response()->json(['message' => 'Accès interdit à cette tâche.'], 403);
+        }
+
+        return response()->json($task);
     }
 
     public function store(Request $request)
@@ -43,7 +63,13 @@ class TaskController extends Controller
             'project_id' => 'required|exists:projects,id',
         ]);
 
-        // Vérifier qu'une tâche avec le même titre n'existe pas déjà dans ce projet
+        $project = Project::findOrFail($request->project_id);
+        $user    = $request->user();
+
+        if ($user->role === 'chef' && intval($project->user_id) !== intval($user->id)) {
+            return response()->json(['message' => 'Vous ne pouvez créer des tâches que dans vos propres projets.'], 403);
+        }
+
         $exists = Task::where('project_id', $request->project_id)
             ->where('titre', $request->titre)
             ->exists();
@@ -76,11 +102,6 @@ class TaskController extends Controller
         return response()->json($task, 201);
     }
 
-    public function show(Task $task)
-    {
-        return $task;
-    }
-
     public function update(Request $request, Task $task)
     {
         $user = $request->user();
@@ -91,7 +112,6 @@ class TaskController extends Controller
             }
             $task->update(['statut' => $request->statut]);
 
-            // Notifier le chef que le statut a changé
             $project = \App\Models\Project::find($task->project_id);
             if ($project) {
                 Notification::create([
@@ -105,13 +125,11 @@ class TaskController extends Controller
             return response()->json($task);
         }
 
-        // Chef modifie la tâche
         $task->update($request->only([
             'titre', 'description', 'statut', 'priorite',
             'date_echeance', 'assigne_a'
         ]));
 
-        // Notifier le membre assigné si le statut change
         if ($request->has('statut') && $task->assigne_a) {
             Notification::create([
                 'user_id' => $task->assigne_a,
