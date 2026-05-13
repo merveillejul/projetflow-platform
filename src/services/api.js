@@ -17,7 +17,8 @@ API.interceptors.request.use(async (config) => {
 API.interceptors.response.use(
     response => response,
     async error => {
-        if (error.response?.status === 401) {
+        const isLoginRequest = error.config?.url?.includes('/login');
+        if (error.response?.status === 401 && !isLoginRequest) {
             await AsyncStorage.removeItem('token');
             await AsyncStorage.removeItem('user');
             DeviceEventEmitter.emit('unauthorized');
