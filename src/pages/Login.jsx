@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../api/api";
 import { useAuth } from "../context/AuthContext";
@@ -23,6 +23,7 @@ const css = `
     transition:border-color 0.15s,box-shadow 0.15s,background 0.15s;
   }
   .lg-input:focus { border-color:#6366F1; box-shadow:0 0 0 3px rgba(99,102,241,0.1); background:#fff; }
+  .lg-input:disabled { background:#F1F5F9; color:#94A3B8; cursor:not-allowed; }
   .lg-input::placeholder { color:#CBD5E1; }
   .lg-btn {
     width:100%; padding:11px; background:#0F172A; color:#fff;
@@ -34,7 +35,7 @@ const css = `
     letter-spacing:-0.1px;
   }
   .lg-btn:hover:not(:disabled) { background:#1E293B; transform:translateY(-1px); box-shadow:0 4px 14px rgba(15,23,42,0.22); }
-  .lg-btn:disabled { opacity:0.65; cursor:not-allowed; transform:none; }
+  .lg-btn:disabled { opacity:0.65; cursor:not-allowed; transform:none; background:#94A3B8; }
   .lg-card {
     background:#fff; border:1px solid #E2E8F0;
     border-radius:16px; padding:28px;
@@ -51,6 +52,15 @@ const css = `
     background:#FEF2F2; border:1px solid #FECACA;
     border-radius:10px; padding:10px 13px; margin-bottom:16px;
   }
+  .lg-warning {
+    display:flex; align-items:flex-start; gap:8px;
+    background:#FFFBEB; border:1px solid #FDE68A;
+    border-radius:10px; padding:10px 13px; margin-bottom:16px;
+  }
+  .lg-lock {
+    background:#FEF2F2; border:1px solid #FECACA;
+    border-radius:10px; padding:12px 14px; margin-bottom:16px;
+  }
   .lg-forgot { font-size:12px; color:#94A3B8; text-decoration:none; transition:color 0.15s; }
   .lg-forgot:hover { color:#475569; }
 `;
@@ -58,21 +68,76 @@ const css = `
 export default function Login() {
   const { login } = useAuth();
   const navigate  = useNavigate();
+
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd]   = useState(false);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
 
+  // ✅ États brute force
+  const [isLocked, setIsLocked]   = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [remaining, setRemaining] = useState(null);
+
+  // ✅ Décompte en temps réel
+  useEffect(() => {
+    if (!isLocked || countdown <= 0) return;
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsLocked(false);
+          setError("");
+          setRemaining(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isLocked, countdown]);
+
+  const formatCountdown = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   const handleSubmit = async (e) => {
-    e.preventDefault(); setError(""); setLoading(true);
+    e.preventDefault();
+    setError("");
+    if (isLocked) return;
+    setLoading(true);
+
     try {
       const res = await API.post("/login", { email, password });
       login(res.data.user, res.data.token);
-      navigate("/dashboard");
+      navigate(res.data.user.role === "admin" ? "/admin" : "/dashboard");
+
     } catch (err) {
-      setError(err.response?.data?.message ?? "Identifiants incorrects.");
-    } finally { setLoading(false); }
+      const status  = err.response?.status;
+      const message = err.response?.data?.message ?? "Identifiants incorrects.";
+
+      // ✅ Compte bloqué
+      if (status === 429) {
+        setIsLocked(true);
+        setCountdown(15 * 60);
+        setError(message);
+
+      // ✅ Mauvais mot de passe
+      } else if (status === 401) {
+        setError(message);
+        const match = message.match(/(\d+) tentative/);
+        if (match) setRemaining(parseInt(match[1]));
+
+      } else {
+        setError(message);
+      }
+
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -96,13 +161,34 @@ export default function Login() {
             <p style={{ margin:0, fontSize:13, color:"#64748B" }}>Connectez-vous à votre espace de travail</p>
           </div>
 
-          {/* Erreur */}
-          {error && (
+          {/* ✅ Bannière blocage */}
+          {isLocked && (
+            <div className="lg-lock">
+              <p style={{ margin:"0 0 4px", fontSize:13, fontWeight:700, color:"#B91C1C" }}>
+                Compte temporairement bloqué
+              </p>
+              <p style={{ margin:0, fontSize:12.5, color:"#B91C1C" }}>
+                Réessayez dans {formatCountdown(countdown)}
+              </p>
+            </div>
+          )}
+
+          {/* ✅ Erreur standard */}
+          {error && !isLocked && (
             <div className="lg-error">
               <svg width="15" height="15" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink:0, marginTop:1 }}>
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
               </svg>
               <span style={{ color:"#B91C1C", fontSize:13, lineHeight:1.45 }}>{error}</span>
+            </div>
+          )}
+
+          {/* ✅ Avertissement tentatives restantes */}
+          {remaining !== null && remaining <= 2 && !isLocked && (
+            <div className="lg-warning">
+              <span style={{ color:"#92400E", fontSize:13 }}>
+                ⚠️ Plus que {remaining} tentative{remaining > 1 ? "s" : ""} avant blocage temporaire
+              </span>
             </div>
           )}
 
@@ -115,7 +201,8 @@ export default function Login() {
                   Adresse email
                 </label>
                 <input className="lg-input" type="email" placeholder="votre@email.fr"
-                  value={email} onChange={e => setEmail(e.target.value)} required />
+                  value={email} onChange={e => setEmail(e.target.value)}
+                  disabled={isLocked} required />
               </div>
 
               <div>
@@ -126,8 +213,8 @@ export default function Login() {
                 <div style={{ position:"relative" }}>
                   <input className="lg-input" type={showPwd ? "text" : "password"}
                     placeholder="••••••••" value={password}
-                    onChange={e => setPassword(e.target.value)} required
-                    style={{ paddingRight:40 }} />
+                    onChange={e => setPassword(e.target.value)}
+                    disabled={isLocked} required style={{ paddingRight:40 }} />
                   <button type="button" className="lg-eye" onClick={() => setShowPwd(s => !s)}>
                     {showPwd ? (
                       <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -145,10 +232,17 @@ export default function Login() {
                 </div>
               </div>
 
-              <button type="submit" disabled={loading} className="lg-btn">
+              <button type="submit" disabled={loading || isLocked} className="lg-btn">
                 {loading ? (
-                  <><div style={{ width:13, height:13, border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin 0.7s linear infinite" }} />Connexion en cours...</>
-                ) : "Se connecter"}
+                  <>
+                    <div style={{ width:13, height:13, border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin 0.7s linear infinite" }} />
+                    Connexion en cours...
+                  </>
+                ) : isLocked ? (
+                  `Bloqué — ${formatCountdown(countdown)}`
+                ) : (
+                  "Se connecter"
+                )}
               </button>
 
             </form>
