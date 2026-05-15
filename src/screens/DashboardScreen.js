@@ -271,7 +271,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
     safe:    { flex: 1, backgroundColor: COLORS.bg },
     scroll:  { flex: 1 },
-    content: { padding: 20, paddingBottom: 44 },
+    content: { padding: 20, paddingBottom: 100 },
 
     /* Header */
     header:     { flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start', marginBottom:28, marginTop:8 },

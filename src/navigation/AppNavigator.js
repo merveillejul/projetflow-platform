@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import Svg, { Path, Circle, Polyline, Line, Rect } from 'react-native-svg';
-import { View, Text, Platform, StatusBar } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
 import API from '../services/api';
@@ -23,7 +23,7 @@ import PlanningScreen from '../screens/PlanningScreen';
 const Tab   = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-const ACTIVE   = '#0F172A';  
+const ACTIVE   = '#0F172A';
 const INACTIVE = '#94a3b8';
 
 function IconDashboard({ color, size = 22 }) {
@@ -77,18 +77,6 @@ function IconProfile({ color, size = 22 }) {
     );
 }
 
-function IconCalendar({ color, size = 22 }) {
-    return (
-        <Svg width={size} height={size} fill="none" stroke={color} strokeWidth="1.75"
-            strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-            <Rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <Line x1="16" y1="2" x2="16" y2="6" />
-            <Line x1="8" y1="2" x2="8" y2="6" />
-            <Line x1="3" y1="10" x2="21" y2="10" />
-        </Svg>
-    );
-}
-
 function NotifIcon({ color, count }) {
     return (
         <View style={{ width: 26, height: 26, alignItems: 'center', justifyContent: 'center' }}>
@@ -121,8 +109,12 @@ function ProjectsStack() {
     );
 }
 
+/* ─── MainTabs avec correction Android ─────────────────────────── */
 function MainTabs() {
     const [unreadCount, setUnreadCount] = useState(0);
+
+    // ✅ Lit la hauteur de la barre système Android automatiquement
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         fetchUnread();
@@ -138,78 +130,81 @@ function MainTabs() {
     };
 
     return (
-        <SafeAreaProvider>
-            <Tab.Navigator
-                screenOptions={{
-                    tabBarActiveTintColor:   ACTIVE,
-                    tabBarInactiveTintColor: INACTIVE,
-                    tabBarStyle: {
-                        height: 68,
-                        paddingBottom: 10,
-                        paddingTop: 8,
-                        backgroundColor: 'white',
-                        borderTopWidth: 0.5,
-                        borderTopColor: '#E2E8F0',
-                        elevation: 8,
-                        shadowColor: '#0F172A',
-                        shadowOpacity: 0.08,
-                        shadowRadius: 12,
-                        shadowOffset: { width: 0, height: -3 },
-                    },
-                    tabBarLabelStyle: {
-                        fontSize: 10.5,
-                        fontWeight: '600',
-                        marginTop: 1,
-                        letterSpacing: 0.1,
-                    },
-                    headerShown: false,
+        <Tab.Navigator
+            screenOptions={{
+                tabBarActiveTintColor:   ACTIVE,
+                tabBarInactiveTintColor: INACTIVE,
+                tabBarStyle: {
+                    // ✅ Hauteur fixe du contenu + hauteur barre Android
+                    height: 58 + insets.bottom,
+                    // ✅ paddingBottom s'adapte : 0 sur Android sans barre,
+                    //    hauteur de la barre sur Android avec barre,
+                    //    home indicator sur iPhone
+                    paddingBottom: insets.bottom > 0 ? insets.bottom + 4 : 10,
+                    paddingTop: 8,
+                    backgroundColor: 'white',
+                    borderTopWidth: 0.5,
+                    borderTopColor: '#E2E8F0',
+                    elevation: 8,
+                    shadowColor: '#0F172A',
+                    shadowOpacity: 0.08,
+                    shadowRadius: 12,
+                    shadowOffset: { width: 0, height: -3 },
+                },
+                tabBarLabelStyle: {
+                    fontSize: 10.5,
+                    fontWeight: '600',
+                    marginTop: 1,
+                    letterSpacing: 0.1,
+                },
+                headerShown: false,
+            }}
+        >
+            <Tab.Screen
+                name="Dashboard"
+                component={DashboardScreen}
+                options={{
+                    title: 'Accueil',
+                    tabBarIcon: ({ color }) => <IconDashboard color={color} />,
                 }}
-            >
-                <Tab.Screen
-                    name="Dashboard"
-                    component={DashboardScreen}
-                    options={{
-                        title: 'Accueil',
-                        tabBarIcon: ({ color }) => <IconDashboard color={color} />,
-                    }}
-                />
-                <Tab.Screen
-                    name="Projects"
-                    component={ProjectsStack}
-                    options={{
-                        title: 'Projets',
-                        tabBarIcon: ({ color }) => <IconProjects color={color} />,
-                    }}
-                />
-                <Tab.Screen
-                    name="Tasks"
-                    component={TasksScreen}
-                    options={{
-                        title: 'Tâches',
-                        tabBarIcon: ({ color }) => <IconTasks color={color} />,
-                    }}
-                />
-                <Tab.Screen
-                    name="Notifications"
-                    component={NotificationsScreen}
-                    options={{
-                        title: 'Notifs',
-                        tabBarIcon: ({ color }) => <NotifIcon color={color} count={unreadCount} />,
-                    }}
-                />
-                <Tab.Screen
-                    name="Profile"
-                    component={ProfileScreen}
-                    options={{
-                        title: 'Profil',
-                        tabBarIcon: ({ color }) => <IconProfile color={color} />,
-                    }}
-                />
-            </Tab.Navigator>
-        </SafeAreaProvider>
+            />
+            <Tab.Screen
+                name="Projects"
+                component={ProjectsStack}
+                options={{
+                    title: 'Projets',
+                    tabBarIcon: ({ color }) => <IconProjects color={color} />,
+                }}
+            />
+            <Tab.Screen
+                name="Tasks"
+                component={TasksScreen}
+                options={{
+                    title: 'Tâches',
+                    tabBarIcon: ({ color }) => <IconTasks color={color} />,
+                }}
+            />
+            <Tab.Screen
+                name="Notifications"
+                component={NotificationsScreen}
+                options={{
+                    title: 'Notifs',
+                    tabBarIcon: ({ color }) => <NotifIcon color={color} count={unreadCount} />,
+                }}
+            />
+            <Tab.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={{
+                    title: 'Profil',
+                    tabBarIcon: ({ color }) => <IconProfile color={color} />,
+                }}
+            />
+        </Tab.Navigator>
     );
 }
 
+/* ─── AppNavigator — sans SafeAreaProvider (déjà dans _layout) ──── */
 export default function AppNavigator() {
     const { user, loading } = useAuth();
 
@@ -217,29 +212,21 @@ export default function AppNavigator() {
 
     if (!user) {
         return (
-            <SafeAreaProvider>
-                <Stack.Navigator screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="Login"          component={LoginScreen} />
-                    <Stack.Screen name="Register"       component={RegisterScreen} />
-                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-                </Stack.Navigator>
-            </SafeAreaProvider>
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="Login"          component={LoginScreen} />
+                <Stack.Screen name="Register"       component={RegisterScreen} />
+                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            </Stack.Navigator>
         );
     }
 
     if (user.first_login === 1 || user.first_login === true) {
         return (
-            <SafeAreaProvider>
-                <Stack.Navigator screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-                </Stack.Navigator>
-            </SafeAreaProvider>
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+            </Stack.Navigator>
         );
     }
 
-    return (
-        <SafeAreaProvider>
-            <MainTabs />
-        </SafeAreaProvider>
-    );
+    return <MainTabs />;
 }

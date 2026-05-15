@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet,
     KeyboardAvoidingView, Platform, ScrollView,
@@ -15,16 +15,17 @@ const COLORS = {
     text:      '#0F172A',
     textMuted: '#64748B',
     textLight: '#94A3B8',
-    // Dark premium (remplace blue)
     primary:   '#0F172A',
     primaryMd: '#1E293B',
-    // Bleu secondaire uniquement pour focus/lien
     blue:      '#6366F1',
     blueMid:   '#818CF8',
     blueBg:    '#EEF2FF',
     red:       '#EF4444',
     redBg:     '#FEF2F2',
     redBorder: '#FECACA',
+    amber:     '#F59E0B',
+    amberBg:   '#FFFBEB',
+    amberBorder:'#FDE68A',
 };
 
 function LogoIcon() {
@@ -58,7 +59,7 @@ function EyeIcon({ visible }) {
     );
 }
 
-function InputField({ label, value, onChangeText, placeholder, secureTextEntry, keyboardType, autoCapitalize, rightAction }) {
+function InputField({ label, value, onChangeText, placeholder, secureTextEntry, keyboardType, autoCapitalize, editable = true }) {
     const [focused, setFocused] = useState(false);
     const [passwordVisible, setPasswordVisible] = useState(false);
 
@@ -71,6 +72,7 @@ function InputField({ label, value, onChangeText, placeholder, secureTextEntry, 
                         styles.input,
                         focused && styles.inputFocused,
                         secureTextEntry && { paddingRight: 48 },
+                        !editable && styles.inputDisabled,
                     ]}
                     placeholder={placeholder}
                     placeholderTextColor={COLORS.textLight}
@@ -79,6 +81,7 @@ function InputField({ label, value, onChangeText, placeholder, secureTextEntry, 
                     secureTextEntry={secureTextEntry && !passwordVisible}
                     keyboardType={keyboardType}
                     autoCapitalize={autoCapitalize ?? 'none'}
+                    editable={editable}
                     onFocus={() => setFocused(true)}
                     onBlur={() => setFocused(false)}
                 />
@@ -104,16 +107,72 @@ export default function LoginScreen({ navigation }) {
     const [loading, setLoading]   = useState(false);
     const [error, setError]       = useState('');
 
+    // ✅ États brute force
+    const [isLocked, setIsLocked]           = useState(false);
+    const [countdown, setCountdown]         = useState(0);
+    const [remainingAttempts, setRemaining] = useState(null);
+
+    // ✅ Décompte en temps réel quand compte bloqué
+    useEffect(() => {
+        if (!isLocked || countdown <= 0) return;
+        const timer = setInterval(() => {
+            setCountdown(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    setIsLocked(false);
+                    setError('');
+                    setRemaining(null);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [isLocked, countdown]);
+
+    const formatCountdown = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
     const handleLogin = async () => {
         setError('');
         if (!email || !password) { setError('Veuillez remplir tous les champs.'); return; }
+        if (isLocked) return;
+
         setLoading(true);
         try {
             const res = await API.post('/login', { email, password });
             await login(res.data.user, res.data.token);
+
         } catch (err) {
-            setError('Email ou mot de passe incorrect.');
-        } finally { setLoading(false); }
+            const status  = err.response?.status;
+            const message = err.response?.data?.message ?? '';
+
+            // ✅ Compte bloqué — HTTP 429
+            if (status === 429) {
+                setIsLocked(true);
+                setCountdown(15 * 60); // 15 minutes en secondes
+                setError(message || 'Compte bloqué temporairement. Réessayez dans 15 minutes.');
+
+            // ✅ Mauvais mot de passe avec tentatives restantes
+            } else if (status === 401) {
+                setError(message || 'Email ou mot de passe incorrect.');
+
+                // Extraire le nombre de tentatives restantes depuis le message
+                const match = message.match(/(\d+) tentative/);
+                if (match) {
+                    setRemaining(parseInt(match[1]));
+                }
+
+            } else {
+                setError('Une erreur est survenue. Veuillez réessayer.');
+            }
+
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -121,11 +180,9 @@ export default function LoginScreen({ navigation }) {
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
-                    {/* LOGO — dark premium */}
+                    {/* LOGO */}
                     <View style={styles.logoBlock}>
-                        <View style={styles.logoIcon}>
-                            <LogoIcon />
-                        </View>
+                        <View style={styles.logoIcon}><LogoIcon /></View>
                         <Text style={styles.logoText}>ProjectFlow</Text>
                         <Text style={styles.logoSub}>Connexion à votre espace de travail</Text>
                     </View>
@@ -133,10 +190,33 @@ export default function LoginScreen({ navigation }) {
                     {/* CARD */}
                     <View style={styles.card}>
 
-                        {error !== '' && (
+                        {/* ✅ Bannière blocage */}
+                        {isLocked && (
+                            <View style={styles.lockBanner}>
+                                <Text style={styles.lockIcon}></Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.lockTitle}>Compte temporairement bloqué</Text>
+                                    <Text style={styles.lockSub}>
+                                        Réessayez dans {formatCountdown(countdown)}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* ✅ Erreur standard */}
+                        {error !== '' && !isLocked && (
                             <View style={styles.errorBox}>
                                 <View style={styles.errorDot} />
                                 <Text style={styles.errorText}>{error}</Text>
+                            </View>
+                        )}
+
+                        {/* ✅ Avertissement tentatives restantes */}
+                        {remainingAttempts !== null && remainingAttempts <= 2 && !isLocked && (
+                            <View style={styles.warningBox}>
+                                <Text style={styles.warningText}>
+                                    ⚠️ Plus que {remainingAttempts} tentative{remainingAttempts > 1 ? 's' : ''} avant blocage
+                                </Text>
                             </View>
                         )}
 
@@ -146,6 +226,7 @@ export default function LoginScreen({ navigation }) {
                             onChangeText={setEmail}
                             placeholder="votre@email.fr"
                             keyboardType="email-address"
+                            editable={!isLocked}
                         />
                         <InputField
                             label="Mot de passe"
@@ -153,6 +234,7 @@ export default function LoginScreen({ navigation }) {
                             onChangeText={setPassword}
                             placeholder="••••••••"
                             secureTextEntry
+                            editable={!isLocked}
                         />
 
                         <TouchableOpacity
@@ -163,11 +245,14 @@ export default function LoginScreen({ navigation }) {
                             <Text style={styles.forgotLink}>Mot de passe oublié ?</Text>
                         </TouchableOpacity>
 
-                        {/* Bouton dark premium */}
                         <TouchableOpacity
-                            style={[styles.btn, loading && { opacity: 0.7 }]}
+                            style={[
+                                styles.btn,
+                                (loading || isLocked) && { opacity: 0.6 },
+                                isLocked && { backgroundColor: '#94A3B8' },
+                            ]}
                             onPress={handleLogin}
-                            disabled={loading}
+                            disabled={loading || isLocked}
                             activeOpacity={0.85}
                         >
                             {loading ? (
@@ -175,6 +260,10 @@ export default function LoginScreen({ navigation }) {
                                     <View style={styles.spinner} />
                                     <Text style={styles.btnText}>Connexion...</Text>
                                 </View>
+                            ) : isLocked ? (
+                                <Text style={styles.btnText}>
+                                     {formatCountdown(countdown)}
+                                </Text>
                             ) : (
                                 <Text style={styles.btnText}>Se connecter</Text>
                             )}
@@ -197,87 +286,78 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: COLORS.bg },
+    safe:   { flex: 1, backgroundColor: COLORS.bg },
     scroll: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingBottom: 48 },
 
     logoBlock: { alignItems: 'center', marginBottom: 36 },
     logoIcon: {
         width: 56, height: 56, borderRadius: 16,
         backgroundColor: COLORS.primary,
-        alignItems: 'center', justifyContent: 'center',
-        marginBottom: 16,
-        shadowColor: COLORS.primary,
-        shadowOpacity: 0.25,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 6,
+        alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+        shadowColor: COLORS.primary, shadowOpacity: 0.25, shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 }, elevation: 6,
     },
-    logoText: {
-        fontSize: 24, fontWeight: '700', color: COLORS.text,
-        letterSpacing: -0.6, marginBottom: 6,
-    },
-    logoSub: { fontSize: 13.5, color: COLORS.textMuted, textAlign: 'center' },
+    logoText: { fontSize: 24, fontWeight: '700', color: COLORS.text, letterSpacing: -0.6, marginBottom: 6 },
+    logoSub:  { fontSize: 13.5, color: COLORS.textMuted, textAlign: 'center' },
 
     card: {
         backgroundColor: COLORS.white, borderRadius: 20,
         padding: 24, marginBottom: 24,
         borderWidth: 1, borderColor: COLORS.border,
-        shadowColor: '#0F172A',
-        shadowOpacity: 0.06,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 3,
+        shadowColor: '#0F172A', shadowOpacity: 0.06, shadowRadius: 16,
+        shadowOffset: { width: 0, height: 4 }, elevation: 3,
     },
+
+    // ✅ Bannière blocage
+    lockBanner: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+        backgroundColor: COLORS.redBg, borderWidth: 1, borderColor: COLORS.redBorder,
+        borderRadius: 12, padding: 14, marginBottom: 16,
+    },
+    lockIcon:  { fontSize: 20 },
+    lockTitle: { fontSize: 13.5, fontWeight: '700', color: '#B91C1C', marginBottom: 3 },
+    lockSub:   { fontSize: 12.5, color: '#B91C1C' },
+
+    // ✅ Avertissement tentatives
+    warningBox: {
+        backgroundColor: COLORS.amberBg, borderWidth: 1, borderColor: COLORS.amberBorder,
+        borderRadius: 10, padding: 10, marginBottom: 14,
+    },
+    warningText: { fontSize: 12.5, color: '#92400E', fontWeight: '500' },
 
     errorBox: {
         flexDirection: 'row', alignItems: 'flex-start', gap: 10,
         backgroundColor: COLORS.redBg, borderWidth: 1, borderColor: COLORS.redBorder,
         borderRadius: 10, padding: 11, marginBottom: 18,
     },
-    errorDot: {
-        width: 6, height: 6, borderRadius: 3,
-        backgroundColor: COLORS.red, marginTop: 5, flexShrink: 0,
-    },
+    errorDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.red, marginTop: 5, flexShrink: 0 },
     errorText: { flex: 1, fontSize: 13, color: '#B91C1C', lineHeight: 19 },
 
-    label: {
-        fontSize: 12.5, fontWeight: '600', color: '#475569',
-        marginBottom: 7, letterSpacing: 0.1,
-    },
+    label: { fontSize: 12.5, fontWeight: '600', color: '#475569', marginBottom: 7, letterSpacing: 0.1 },
     input: {
         backgroundColor: '#FAFAFA', borderWidth: 1, borderColor: COLORS.border,
         borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13,
         fontSize: 15, color: COLORS.text,
     },
     inputFocused: {
-        borderColor: COLORS.blue,
-        backgroundColor: COLORS.white,
-        shadowColor: COLORS.blue,
-        shadowOpacity: 0.1, shadowRadius: 6, elevation: 2,
+        borderColor: COLORS.blue, backgroundColor: COLORS.white,
+        shadowColor: COLORS.blue, shadowOpacity: 0.1, shadowRadius: 6, elevation: 2,
     },
-    eyeBtn: {
-        position: 'absolute', right: 13,
-        top: '50%', marginTop: -12, padding: 4,
-    },
-    forgotLink: {
-        fontSize: 12.5, color: COLORS.textMuted,
-        fontWeight: '500',
-    },
+    inputDisabled: { backgroundColor: '#F1F5F9', color: COLORS.textLight },
+    eyeBtn: { position: 'absolute', right: 13, top: '50%', marginTop: -12, padding: 4 },
+    forgotLink: { fontSize: 12.5, color: COLORS.textMuted, fontWeight: '500' },
 
     btn: {
         backgroundColor: COLORS.primary, borderRadius: 12,
         paddingVertical: 15, alignItems: 'center',
-        shadowColor: COLORS.primary,
-        shadowOpacity: 0.2, shadowRadius: 8,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 4,
+        shadowColor: COLORS.primary, shadowOpacity: 0.2, shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 }, elevation: 4,
     },
-    btnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    btnRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
     btnText: { color: 'white', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
     spinner: {
         width: 15, height: 15, borderRadius: 8,
-        borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
-        borderTopColor: 'white',
+        borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white',
     },
 
     registerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
