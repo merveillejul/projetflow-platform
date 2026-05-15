@@ -152,10 +152,12 @@ export default function LoginScreen({ navigation }) {
 
             // ✅ Compte bloqué — HTTP 429
             if (status === 429) {
+                // ✅ Utilise les secondes exactes du serveur
+                const seconds = err.response?.data?.retry_after_seconds ?? (15 * 60);
                 setIsLocked(true);
-                setCountdown(15 * 60); // 15 minutes en secondes
-                setError(message || 'Compte bloqué temporairement. Réessayez dans 15 minutes.');
-
+                setCountdown(seconds);
+                setError(message);
+    
             // ✅ Mauvais mot de passe avec tentatives restantes
             } else if (status === 401) {
                 setError(message || 'Email ou mot de passe incorrect.');
