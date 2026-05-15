@@ -62,24 +62,30 @@ class AuthController extends Controller
             return response()->json(['message' => 'Email ou mot de passe incorrect.'], 401);
         }
 
+        // BLOC 1 — compte déjà bloqué (remplace les lignes existantes)
         if ($user->isLocked()) {
-            $minutes = (int) now()->diffInMinutes($user->locked_until, false);
+            $secondsRemaining = (int) now()->diffInSeconds($user->locked_until, false);
+            $minutes = ceil($secondsRemaining / 60);
             return response()->json([
-                'message' => "Compte temporairement bloqué après trop de tentatives échouées. Réessayez dans {$minutes} minute(s).",
+                'message'          => "Compte temporairement bloqué. Réessayez dans {$minutes} minute(s).",
+                'retry_after_seconds' => $secondsRemaining,
             ], 429);
         }
 
         if (!Hash::check($request->password, $user->password)) {
             $attempts = $user->login_attempts + 1;
 
+            // BLOC 2 — blocage qui vient de se déclencher (remplace les lignes existantes)
             if ($attempts >= self::MAX_ATTEMPTS) {
+                $lockedUntil = Carbon::now()->addMinutes(self::LOCKOUT_MINUTES);
                 $user->update([
                     'login_attempts' => $attempts,
-                    'locked_until'   => Carbon::now()->addMinutes(self::LOCKOUT_MINUTES),
+                    'locked_until'   => $lockedUntil,
                 ]);
-
+                $secondsRemaining = self::LOCKOUT_MINUTES * 60;
                 return response()->json([
-                    'message' => 'Trop de tentatives échouées. Compte bloqué pendant ' . self::LOCKOUT_MINUTES . ' minutes.',
+                    'message'          => 'Trop de tentatives échouées. Compte bloqué pendant ' . self::LOCKOUT_MINUTES . ' minutes.',
+                    'retry_after_seconds' => $secondsRemaining,
                 ], 429);
             }
 
