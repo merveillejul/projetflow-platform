@@ -121,8 +121,10 @@ export default function Login() {
 
       // ✅ Compte bloqué
       if (status === 429) {
+        // ✅ Utilise les secondes exactes du serveur
+        const seconds = err.response?.data?.retry_after_seconds ?? (15 * 60);
         setIsLocked(true);
-        setCountdown(15 * 60);
+        setCountdown(seconds);
         setError(message);
 
       // ✅ Mauvais mot de passe
