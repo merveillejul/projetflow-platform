@@ -1,66 +1,133 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ProjectFlow — API Laravel
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API REST du projet ProjectFlow, développée avec Laravel 10.50.2.
 
-## About Laravel
+**Candidat :** Merveille Juliana — N° 2545871902  
+**BTS SIO SLAM — Session 2026**
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack technique
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.2
+- Laravel 10.50.2
+- Laravel Sanctum (authentification par token)
+- MySQL
+- Déployé sur Railway
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Architecture
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+L'API suit une architecture REST standard :
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- `POST /api/login` — Connexion, renvoie un token Bearer
+- `POST /api/register` — Inscription (compte en attente de validation)
+- `POST /api/logout` — Déconnexion
+- `GET /api/user` — Profil de l'utilisateur connecté
+- `PUT /api/user` — Modifier nom et email
+- `POST /api/user/photo` — Uploader une photo de profil
 
-## Laravel Sponsors
+### Projets
+- `GET /api/projects` — Liste des projets
+- `POST /api/projects` — Créer un projet (chef uniquement)
+- `GET /api/projects/{id}` — Détail d'un projet
+- `PUT /api/projects/{id}` — Modifier un projet (chef uniquement)
+- `DELETE /api/projects/{id}` — Supprimer un projet (chef uniquement)
+- `GET /api/projects/{id}/members` — Membres d'un projet
+- `POST /api/projects/{id}/members` — Ajouter un membre (chef uniquement)
+- `DELETE /api/projects/{id}/members/{userId}` — Retirer un membre (chef uniquement)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Tâches
+- `GET /api/projects/{id}/tasks` — Tâches d'un projet
+- `POST /api/tasks` — Créer une tâche (chef uniquement)
+- `PUT /api/tasks/{id}` — Modifier/changer statut
+- `DELETE /api/tasks/{id}` — Supprimer une tâche (chef uniquement)
+- `GET /api/my-tasks` — Mes tâches assignées
 
-### Premium Partners
+### Commentaires
+- `GET /api/tasks/{id}/comments` — Commentaires d'une tâche
+- `POST /api/tasks/{id}/comments` — Ajouter un commentaire
+- `DELETE /api/comments/{id}` — Supprimer un commentaire
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+### Notifications
+- `GET /api/notifications` — Mes notifications
+- `POST /api/notifications/{id}/read` — Marquer comme lue
+- `POST /api/notifications/read-all` — Tout marquer comme lu
+- `DELETE /api/notifications/{id}` — Supprimer une notification
 
-## Contributing
+### Administration
+- `GET /api/users` — Liste des utilisateurs (admin uniquement)
+- `PATCH /api/users/{id}/validate` — Valider/suspendre un compte (admin uniquement)
+- `PUT /api/users/{id}/role` — Modifier le rôle (admin uniquement)
+- `DELETE /api/users/{id}` — Supprimer un utilisateur (admin uniquement)
+- `GET /api/dashboard/stats` — Statistiques du tableau de bord
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Sécurité
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- Mots de passe hashés avec **bcrypt**
+- Authentification par **token Bearer** (Laravel Sanctum)
+- **Middleware CheckRole** — vérifie le rôle avant chaque requête protégée
+- **Protection brute force** — blocage temporaire après 5 tentatives échouées (15 minutes)
+- Nouveau compte bloqué jusqu'à validation par un administrateur
+- Mot de passe : minimum 12 caractères, majuscule, chiffre, caractère spécial obligatoires
+- **CORS** configuré pour autoriser uniquement les domaines autorisés
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Base de données
 
-## License
+8 tables :
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Table | Rôle |
+|---|---|
+| `users` | Utilisateurs (admin, chef, membre) |
+| `projects` | Projets créés par les chefs |
+| `tasks` | Tâches liées aux projets |
+| `project_user` | Table pivot — membres d'un projet |
+| `comments` | Commentaires sur les tâches |
+| `notifications` | Notifications utilisateurs |
+| `files` | Fichiers uploadés |
+| `personal_access_tokens` | Tokens Sanctum |
+
+---
+
+## Lancer en local
+
+```bash
+# Cloner le repo
+git clone https://github.com/merveillejul/projetflow-platform.git
+cd projectflow-api
+
+# Installer les dépendances
+composer install
+
+# Configurer l'environnement
+cp .env.example .env
+php artisan key:generate
+
+# Migrer la base de données
+php artisan migrate:fresh --seed
+
+# Lancer le serveur
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+## Comptes de démonstration
+
+Après `php artisan migrate:fresh --seed` :
+
+| Rôle | Email | Mot de passe |
+|---|---|---|
+| Admin | admin.projectflow@demo.fr | Admin@PF2026! |
+| Chef de projet | chef.projectflow@demo.fr | Chef@PF2026! |
+| Membre | membre.projectflow@demo.fr | Membre@PF2026! |
+
+---
+
+## Déploiement
+
+API déployée sur **Railway** :  
+`https://projetflow-platform-production.up.railway.app/api`
